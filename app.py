@@ -16,10 +16,7 @@ st.set_page_config(
 # -----------------------------
 SEOUL_CENTER = [37.5665, 126.9780]
 
-# 네 GitHub CSV raw 링크로 바꿔라
-# 예:
-# https://raw.githubusercontent.com/USER/REPO/main/data/night_spots.csv
-
+# GitHub RAW 링크 사용
 CSV_URL = "https://raw.githubusercontent.com/kimhl2261/Attractiveness/main/seoul_night.csv"
 
 CONGESTION_COLOR = {
@@ -49,31 +46,63 @@ CONGESTION_PRIORITY = {
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_spot_csv(csv_url: str) -> pd.DataFrame:
-    """
-    GitHub raw CSV 로드
-
-    권장 컬럼:
-    - spot_name
-    - api_place_name
-    - category
-    - district
-    - lat
-    - lon
-    - address
-    - operation_hours
-    - fee
-    - transport
-    - parking
-    - description
-    """
     df = pd.read_csv(csv_url, encoding="utf-8-sig")
 
+    # 실제 CSV 컬럼명을 앱 내부 컬럼명으로 변환
+    rename_map = {
+        "장소명": "spot_name",
+        "분류": "category",
+        "주소": "address",
+        "위도": "lat",
+        "경도": "lon",
+        "운영시간": "operation_hours",
+        "이용요금": "fee",
+        "내용": "description",
+        "주차안내": "parking",
+    }
+    df = df.rename(columns=rename_map)
+
+    # transport 컬럼 생성: 지하철 + 버스 합치기
+    subway_series = df["지하철"].fillna("").astype(str).str.strip() if "지하철" in df.columns else pd.Series([""] * len(df))
+    bus_series = df["버스"].fillna("").astype(str).str.strip() if "버스" in df.columns else pd.Series([""] * len(df))
+
+    transport = []
+    for subway, bus in zip(subway_series, bus_series):
+        if subway and bus:
+            transport.append(f"지하철: {subway} / 버스: {bus}")
+        elif subway:
+            transport.append(f"지하철: {subway}")
+        elif bus:
+            transport.append(f"버스: {bus}")
+        else:
+            transport.append("")
+    df["transport"] = transport
+
+    # district 생성: 주소에서 구 추출
+    if "address" in df.columns:
+        extracted = df["address"].astype(str).str.extract(r"서울(?:특별시)?\s+([가-힣]+구)")
+        df["district"] = extracted[0].fillna("")
+    else:
+        df["district"] = ""
+
+    # api_place_name 생성
+    # 우선 장소명 그대로 사용
+    df["api_place_name"] = df["spot_name"].astype(str).str.strip()
+
+    # 숫자형 변환
+    df["lat"] = pd.to_numeric(df["lat"], errors="coerce")
+    df["lon"] = pd.to_numeric(df["lon"], errors="coerce")
+
+    # 필수 컬럼 확인
     required_cols = ["spot_name", "api_place_name", "lat", "lon"]
     missing = [c for c in required_cols if c not in df.columns]
     if missing:
         raise ValueError(f"CSV 필수 컬럼 누락: {missing}")
 
-    # 없는 컬럼은 기본 생성
+    # 좌표 없는 행 제거
+    df = df.dropna(subset=["lat", "lon"]).copy()
+
+    # 선택 컬럼 없으면 빈 컬럼 생성
     optional_cols = [
         "category", "district", "address", "operation_hours",
         "fee", "transport", "parking", "description"
@@ -81,6 +110,12 @@ def load_spot_csv(csv_url: str) -> pd.DataFrame:
     for col in optional_cols:
         if col not in df.columns:
             df[col] = ""
+
+    # 문자열 정리
+    text_cols = ["spot_name", "api_place_name", "category", "district", "address",
+                 "operation_hours", "fee", "transport", "parking", "description"]
+    for col in text_cols:
+        df[col] = df[col].fillna("").astype(str).str.strip()
 
     return df
 
@@ -104,10 +139,6 @@ def call_seoul_population_api(api_key: str, api_place_name: str, timeout: int = 
 
 
 def parse_population_response(raw_data: dict) -> dict | None:
-    """
-    서울시 실시간 인구 API 응답 파싱
-    실제 응답 구조에 맞춰 안전하게 작성
-    """
     if not raw_data:
         return None
 
@@ -134,9 +165,6 @@ def parse_population_response(raw_data: dict) -> dict | None:
 
 @st.cache_data(ttl=300)
 def fetch_live_population_batch(api_key: str, spot_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    CSV의 api_place_name 기준으로 실시간 정보 조회
-    """
     results = []
 
     unique_places = (
@@ -460,11 +488,10 @@ elif page == "서비스 소개":
         """
     )
 
-    with st.expander("CSV 필수 컬럼 예시"):
-        st.code(
-            "spot_name,api_place_name,category,district,lat,lon,address,operation_hours,fee,transport,parking,description",
-            language="text"
-        )
+    with st.expander("현재 불러온 CSV 확인"):
+        st.write("CSV URL:", CSV_URL)
+        st.write("컬럼명:", df.columns.tolist())
+        st.dataframe(df.head(), use_container_width=True)
 
     with st.expander("실시간 API 테스트"):
         test_place = st.text_input("API 장소명 입력", value="")
