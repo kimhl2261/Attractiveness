@@ -18,9 +18,8 @@ st.set_page_config(
 # -----------------------------
 SEOUL_CENTER = [37.5665, 126.9780]
 
-# 업로드한 CSV 파일 경로
-"CSV_URL = "https://github.com/kimhl2261/Attractiveness/blob/main/seoul_night.csv"
-
+# GitHub RAW 주소 사용
+CSV_URL = "https://raw.githubusercontent.com/kimhl2261/Attractiveness/main/seoul_night.csv"
 
 CONGESTION_COLOR = {
     "여유": "green",
@@ -44,7 +43,7 @@ CONGESTION_PRIORITY = {
 }
 
 # -----------------------------
-# 서울시 실시간 인구 API 매핑 테이블
+# 서울시 실시간 인구 API 매핑
 # -----------------------------
 API_PLACE_MAPPING = {
     "남산서울타워": "명동관광특구",
@@ -100,13 +99,24 @@ API_PLACE_MAPPING = {
     "성산대교": "서울월드컵경기장",
 }
 
-
 # -----------------------------
-# CSV 로드 및 전처리
+# CSV 로드
 # -----------------------------
 @st.cache_data(ttl=600)
-def load_spot_csv(csv_path: str) -> pd.DataFrame:
-    df = pd.read_csv(csv_path, encoding="euc-kr")
+def load_spot_csv(csv_url: str) -> pd.DataFrame:
+    # GitHub raw CSV는 일반적으로 utf-8-sig로 잘 읽힘
+    # 실패하면 cp949/euc-kr 순서로 재시도
+    encodings = ["utf-8-sig", "cp949", "euc-kr"]
+    last_error = None
+
+    for enc in encodings:
+        try:
+            df = pd.read_csv(csv_url, encoding=enc)
+            break
+        except Exception as e:
+            last_error = e
+    else:
+        raise ValueError(f"CSV 읽기 실패: {last_error}")
 
     rename_map = {
         "분류": "category",
@@ -155,7 +165,6 @@ def load_spot_csv(csv_path: str) -> pd.DataFrame:
     else:
         df["district"] = ""
 
-    # 수동 API 매핑 적용
     df["api_place_name"] = df["spot_name"].map(API_PLACE_MAPPING)
 
     df["lat"] = pd.to_numeric(df["lat"], errors="coerce")
@@ -322,8 +331,8 @@ def merge_spot_and_live_data(spot_df: pd.DataFrame, live_df: pd.DataFrame) -> pd
 
 
 @st.cache_data(ttl=300)
-def load_all_data(csv_path: str, api_key: str | None) -> pd.DataFrame:
-    spot_df = load_spot_csv(csv_path)
+def load_all_data(csv_url: str, api_key: str | None) -> pd.DataFrame:
+    spot_df = load_spot_csv(csv_url)
 
     if api_key:
         live_df = fetch_live_population_batch(api_key, spot_df)
@@ -384,7 +393,8 @@ def render_spot_card(row: pd.Series):
             f"**운영시간:** {row.get('operation_hours', '-')}  \n"
             f"**유/무료:** {row.get('free_type', '-')}"
         )
-        st.write(row.get("description", "")[:250] + ("..." if len(row.get("description", "")) > 250 else ""))
+        desc = row.get("description", "")
+        st.write(desc[:250] + ("..." if len(desc) > 250 else ""))
         st.caption(
             f"📍 {row.get('district', '-')} | 🚇 {row.get('transport', '-')} | "
             f"🔗 API 매핑: {row.get('api_place_name', '-') if pd.notna(row.get('api_place_name')) else '미지원'}"
@@ -416,7 +426,7 @@ def get_alternative_spots(df: pd.DataFrame, selected_row: pd.Series, top_n: int 
 api_key = st.secrets.get("SEOUL_API_KEY", None)
 
 try:
-    df = load_all_data(CSV_PATH, api_key)
+    df = load_all_data(CSV_URL, api_key)
 except Exception as e:
     st.error(f"데이터 로드 실패: {e}")
     st.stop()
@@ -609,7 +619,7 @@ elif page == "서비스 소개":
     )
 
     with st.expander("현재 불러온 CSV 확인"):
-        st.write("CSV 경로:", CSV_PATH)
+        st.write("CSV URL:", CSV_URL)
         st.write("컬럼명:", df.columns.tolist())
         st.dataframe(df.head(), use_container_width=True)
 
