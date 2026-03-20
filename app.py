@@ -297,28 +297,49 @@ def parse_population(raw: dict) -> dict:
         "ppltn_max":          item.get("AREA_PPLTN_MAX"),
     }
 
+# ── 버그 수정 1: @st.cache_data는 DataFrame 인자를 hash할 수 없음
+#    → unique 장소명 리스트(직렬화 가능)를 받도록 변경
 @st.cache_data(ttl=300)
-def fetch_population_batch(api_key: str, spot_df: pd.DataFrame) -> pd.DataFrame:
-    rows = []
-    for place_name, grp in spot_df.groupby("api_place_name", dropna=True):
-        raw    = call_population_api(api_key, str(place_name))
+def fetch_population_batch(api_key: str, unique_place_names: list) -> dict:
+    """
+    api_place_name → parsed 결과 딕셔너리 반환
+    캐시 키로 list(직렬화 가능)를 사용
+    """
+    result = {}
+    for place_name in unique_place_names:
+        raw    = call_population_api(api_key, place_name)
         parsed = parse_population(raw)
-        for spot_name in grp["spot_name"].tolist():
-            rows.append({"spot_name": spot_name, "api_place_name": place_name, **parsed})
+        result[place_name] = parsed
         time.sleep(0.15)
-    return pd.DataFrame(rows)
+    return result
 
 @st.cache_data(ttl=300)
 def load_all_data(csv_url: str, api_key: str | None) -> pd.DataFrame:
     df = load_spot_csv(csv_url)
-    if api_key:
-        live = fetch_population_batch(api_key, df[df["api_place_name"].notna()])
-        df   = df.merge(live[["spot_name","congestion","congestion_message",
-                               "male_rate","female_rate","ppltn_min","ppltn_max"]],
-                        on="spot_name", how="left")
-    else:
-        for c in ["congestion","congestion_message","male_rate","female_rate","ppltn_min","ppltn_max"]:
-            df[c] = None
+
+    # 혼잡도 컬럼 초기화
+    for c in ["congestion","congestion_message","male_rate","female_rate","ppltn_min","ppltn_max"]:
+        df[c] = None
+
+    if not api_key:
+        return df
+
+    # ── 버그 수정 2: api_place_name별로 한 번만 호출 후, 같은 place를 공유하는
+    #    모든 spot_name 행에 결과를 반영
+    unique_places = [
+        str(p) for p in df["api_place_name"].dropna().unique()
+        if str(p).strip() and str(p) != "None"
+    ]
+
+    place_data = fetch_population_batch(api_key, unique_places)
+
+    for place_name, parsed in place_data.items():
+        if not parsed or parsed.get("congestion") is None:
+            continue
+        mask = df["api_place_name"] == place_name
+        for col, val in parsed.items():
+            df.loc[mask, col] = val
+
     return df
 
 # ── 이미지 스크래핑 ───────────────────────────────────────────────
@@ -769,16 +790,60 @@ elif page == "ℹ️ 서비스 소개":
         pv = pv[pv["주차 여부"].notna()]
         st.dataframe(pv, use_container_width=True, hide_index=True)
 
-    with st.expander("🔬 API 직접 테스트"):
-        st.markdown('<div style="color:#8b949e;font-size:13px;">장소명을 직접 입력해 API 응답을 확인합니다.</div>', unsafe_allow_html=True)
-        test_place = st.text_input("장소명", value="광화문·덕수궁", placeholder="예: 광화문·덕수궁, 명동관광특구")
+    with st.expander("🔬 API 직접 테스트 (디버그)"):
+        st.markdown('<div style="color:#8b949e;font-size:13px;margin-bottom:8px;">장소명을 직접 입력해 API 응답 전체를 확인합니다.</div>', unsafe_allow_html=True)
+
+        # 매핑된 고유 장소명 드롭다운 제공
+        mapped_places = sorted([
+            str(p) for p in df["api_place_name"].dropna().unique()
+            if str(p).strip() and str(p) != "None"
+        ])
+        col_select, col_manual = st.columns([1, 1])
+        with col_select:
+            selected_test = st.selectbox("매핑된 장소 선택", ["직접 입력"] + mapped_places)
+        with col_manual:
+            manual_input = st.text_input("또는 직접 입력", value="", placeholder="광화문·덕수궁")
+
+        test_place = manual_input.strip() if selected_test == "직접 입력" else selected_test
+
         if st.button("🔍 API 호출", use_container_width=True):
             if not api_key:
                 st.error("SEOUL_API_KEY가 설정되지 않았습니다.")
+            elif not test_place:
+                st.warning("장소명을 선택하거나 입력해 주세요.")
             else:
-                with st.spinner("호출 중..."):
-                    raw = call_population_api(api_key, test_place.strip())
-                code = (raw.get("RESULT") or {}).get("CODE","")
-                if code == "INFO-000": st.success(f"✅ 성공 — {code}")
-                elif code:             st.error(f"❌ 실패 — {code}: {(raw.get('RESULT') or {}).get('MESSAGE','')}")
-                st.json(raw)
+                from urllib.parse import quote as _q
+                try:
+                    euckr_encoded = _q(test_place.encode("euc-kr"))
+                except Exception:
+                    euckr_encoded = "(인코딩 실패)"
+                utf8_encoded = _q(test_place)
+
+                st.markdown(f"""
+                <div style="background:#21262d;border-radius:8px;padding:10px 14px;font-size:12px;color:#8b949e;margin-bottom:8px;font-family:monospace;">
+                EUC-KR URL: .../{euckr_encoded}<br>
+                UTF-8  URL: .../{utf8_encoded}
+                </div>""", unsafe_allow_html=True)
+
+                with st.spinner(f"'{test_place}' 호출 중..."):
+                    raw = call_population_api(api_key, test_place)
+
+                code = (raw.get("RESULT") or {}).get("CODE", "")
+                msg  = (raw.get("RESULT") or {}).get("MESSAGE", "")
+
+                if code == "INFO-000":
+                    parsed = parse_population(raw)
+                    st.success(f"✅ 성공!  혼잡도 → **{parsed.get('congestion', 'N/A')}**")
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("혼잡도",    parsed.get("congestion") or "-")
+                    c2.metric("추정 인구", f"{parsed.get('ppltn_min','-')}~{parsed.get('ppltn_max','-')}명")
+                    c3.metric("남/여 비율", f"{parsed.get('male_rate','-')}% / {parsed.get('female_rate','-')}%")
+                elif code == "ERROR-500":
+                    st.error(f"❌ ERROR-500 — 장소명이 정확하지 않거나 키 권한 문제입니다.\n\n{msg}")
+                elif code:
+                    st.error(f"❌ {code} — {msg}")
+                else:
+                    st.error(f"❌ 예상치 못한 응답 구조입니다.")
+
+                with st.expander("원본 JSON 응답 보기"):
+                    st.json(raw)
