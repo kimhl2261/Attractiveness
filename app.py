@@ -1,4 +1,6 @@
 import time
+from urllib.parse import quote
+
 import requests
 import pandas as pd
 import streamlit as st
@@ -16,8 +18,9 @@ st.set_page_config(
 # -----------------------------
 SEOUL_CENTER = [37.5665, 126.9780]
 
-# GitHub RAW 링크 사용
-CSV_URL = "https://raw.githubusercontent.com/kimhl2261/Attractiveness/main/seoul_night.csv"
+# 업로드한 CSV 파일 경로
+"CSV_URL = "https://raw.githubusercontent.com/kimhl2261/Attractiveness/main/seoul_night.csv"
+
 
 CONGESTION_COLOR = {
     "여유": "green",
@@ -40,31 +43,99 @@ CONGESTION_PRIORITY = {
     "정보없음": 3
 }
 
+# -----------------------------
+# 서울시 실시간 인구 API 매핑 테이블
+# -----------------------------
+API_PLACE_MAPPING = {
+    "남산서울타워": "명동관광특구",
+    "장충체육관": "동대문디자인플라자",
+    "용양봉저정 공원": "노들섬",
+    "창경궁": "광화문광장",
+    "서울어린이대공원 내 서울상상나라": None,
+    "창덕궁": "광화문광장",
+    "여의도한강공원 물빛광장": "여의도한강공원",
+    "뚝섬 자벌레(한강이야기전시관)": "뚝섬한강공원",
+    "청계천": "청계천",
+    "성수대교": "뚝섬한강공원",
+    "마포대교": "여의도한강공원",
+    "난지거울분수": None,
+    "이촌한강공원": "국립중앙박물관·용산가족공원",
+    "남산공원 백범광장- 서울한양도성 성곽": "명동관광특구",
+    "사육신공원": "노들섬",
+    "월드컵대교": "서울월드컵경기장",
+    "문화비축기지": "서울월드컵경기장",
+    "숭례문(남대문)": "명동관광특구",
+    "서울월드컵경기장": "서울월드컵경기장",
+    "노들섬복합문화공간": "노들섬",
+    "광화문광장(광화문)": "광화문광장",
+    "하늘공원(월드컵공원내)": "서울월드컵경기장",
+    "동대문디자인플라자(DDP)": "동대문디자인플라자",
+    "경복궁": "광화문광장",
+    "서울로미디어캔버스": "명동관광특구",
+    "덕수궁": "광화문광장",
+    "반포대교 달빛무지개 분수": "반포한강공원",
+    "서울어린이대공원 팔각당 오름광장": None,
+    "올림픽대교": "잠실관광특구",
+    "세빛섬": "반포한강공원",
+    "서울함 공원": None,
+    "낙산공원 - 한양도성 성곽길": "동대문디자인플라자",
+    "아뜰리에 광화": "광화문광장",
+    "당산철교": "여의도한강공원",
+    "세종문화회관": "광화문광장",
+    "한강대교": "노들섬",
+    "동작대교": "반포한강공원",
+    "서울시립미술관 서소문본관": "광화문광장",
+    "서울식물원": None,
+    "덕수궁 돌담길": "광화문광장",
+    "광진교 8번가": "광나루한강공원",
+    "고척스카이돔": "고척돔",
+    "서울어린이대공원 후문 선형공원": None,
+    "뚝섬 음악분수": "뚝섬한강공원",
+    "석촌호수 루미나리에(송파나루공원)": "잠실관광특구",
+    "동호대교": "반포한강공원",
+    "선유도공원": None,
+    "송파책박물관": "잠실관광특구",
+    "노원불빛정원(화랑대철도공원 내)": None,
+    "서울어린이대공원 음악분수": None,
+    "성산대교": "서울월드컵경기장",
+}
+
 
 # -----------------------------
-# 데이터 로드
+# CSV 로드 및 전처리
 # -----------------------------
 @st.cache_data(ttl=600)
-def load_spot_csv(csv_url: str) -> pd.DataFrame:
-    df = pd.read_csv(csv_url, encoding="utf-8-sig")
+def load_spot_csv(csv_path: str) -> pd.DataFrame:
+    df = pd.read_csv(csv_path, encoding="euc-kr")
 
-    # 실제 CSV 컬럼명을 앱 내부 컬럼명으로 변환
     rename_map = {
-        "장소명": "spot_name",
         "분류": "category",
+        "장소명": "spot_name",
         "주소": "address",
         "위도": "lat",
         "경도": "lon",
         "운영시간": "operation_hours",
+        "유무료구분": "free_type",
         "이용요금": "fee",
         "내용": "description",
         "주차안내": "parking",
+        "전화번호": "phone",
+        "홈페이지 URL": "homepage_url",
+        "등록일시": "created_at",
+        "수정일시": "updated_at",
     }
     df = df.rename(columns=rename_map)
 
-    # transport 컬럼 생성: 지하철 + 버스 합치기
-    subway_series = df["지하철"].fillna("").astype(str).str.strip() if "지하철" in df.columns else pd.Series([""] * len(df))
-    bus_series = df["버스"].fillna("").astype(str).str.strip() if "버스" in df.columns else pd.Series([""] * len(df))
+    subway_series = (
+        df["지하철"].fillna("").astype(str).str.strip()
+        if "지하철" in df.columns
+        else pd.Series([""] * len(df))
+    )
+    bus_series = (
+        df["버스"].fillna("").astype(str).str.strip()
+        if "버스" in df.columns
+        else pd.Series([""] * len(df))
+    )
 
     transport = []
     for subway, bus in zip(subway_series, bus_series):
@@ -78,42 +149,39 @@ def load_spot_csv(csv_url: str) -> pd.DataFrame:
             transport.append("")
     df["transport"] = transport
 
-    # district 생성: 주소에서 구 추출
     if "address" in df.columns:
-        extracted = df["address"].astype(str).str.extract(r"서울(?:특별시)?\s+([가-힣]+구)")
-        df["district"] = extracted[0].fillna("")
+        extracted = df["address"].astype(str).str.extract(r"(서울(?:특별시)?\s+)?([가-힣]+구)")
+        df["district"] = extracted[1].fillna("")
     else:
         df["district"] = ""
 
-    # api_place_name 생성
-    # 우선 장소명 그대로 사용
-    df["api_place_name"] = df["spot_name"].astype(str).str.strip()
+    # 수동 API 매핑 적용
+    df["api_place_name"] = df["spot_name"].map(API_PLACE_MAPPING)
 
-    # 숫자형 변환
     df["lat"] = pd.to_numeric(df["lat"], errors="coerce")
     df["lon"] = pd.to_numeric(df["lon"], errors="coerce")
 
-    # 필수 컬럼 확인
-    required_cols = ["spot_name", "api_place_name", "lat", "lon"]
+    df = df.dropna(subset=["lat", "lon"]).copy()
+
+    required_cols = ["spot_name", "lat", "lon"]
     missing = [c for c in required_cols if c not in df.columns]
     if missing:
         raise ValueError(f"CSV 필수 컬럼 누락: {missing}")
 
-    # 좌표 없는 행 제거
-    df = df.dropna(subset=["lat", "lon"]).copy()
-
-    # 선택 컬럼 없으면 빈 컬럼 생성
     optional_cols = [
         "category", "district", "address", "operation_hours",
-        "fee", "transport", "parking", "description"
+        "free_type", "fee", "transport", "parking",
+        "description", "phone", "homepage_url", "api_place_name"
     ]
     for col in optional_cols:
         if col not in df.columns:
             df[col] = ""
 
-    # 문자열 정리
-    text_cols = ["spot_name", "api_place_name", "category", "district", "address",
-                 "operation_hours", "fee", "transport", "parking", "description"]
+    text_cols = [
+        "spot_name", "category", "district", "address",
+        "operation_hours", "free_type", "fee", "transport",
+        "parking", "description", "phone", "homepage_url"
+    ]
     for col in text_cols:
         df[col] = df[col].fillna("").astype(str).str.strip()
 
@@ -124,23 +192,46 @@ def load_spot_csv(csv_url: str) -> pd.DataFrame:
 # 서울시 실시간 인구 API
 # -----------------------------
 def build_seoul_api_url(api_key: str, api_place_name: str) -> str:
-    return f"http://openapi.seoul.go.kr:8088/{api_key}/json/citydata_ppltn/1/5/{api_place_name}"
+    encoded_place_name = quote(api_place_name)
+    return f"http://openapi.seoul.go.kr:8088/{api_key}/json/citydata_ppltn/1/5/{encoded_place_name}"
 
 
 def call_seoul_population_api(api_key: str, api_place_name: str, timeout: int = 10) -> dict | None:
     url = build_seoul_api_url(api_key, api_place_name)
-
     try:
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
         return response.json()
-    except requests.RequestException:
-        return None
+    except requests.RequestException as e:
+        return {"error": str(e), "url": url}
 
 
 def parse_population_response(raw_data: dict) -> dict | None:
     if not raw_data:
         return None
+
+    if raw_data.get("error"):
+        return {
+            "api_place_name": None,
+            "congestion": "정보없음",
+            "congestion_message": f"요청 오류: {raw_data.get('error')}",
+            "male_rate": None,
+            "female_rate": None,
+            "ppltn_min": None,
+            "ppltn_max": None,
+        }
+
+    result = raw_data.get("RESULT")
+    if result and result.get("CODE") != "INFO-000":
+        return {
+            "api_place_name": None,
+            "congestion": "정보없음",
+            "congestion_message": f"API 오류: {result.get('CODE')} / {result.get('MESSAGE', '')}",
+            "male_rate": None,
+            "female_rate": None,
+            "ppltn_min": None,
+            "ppltn_max": None,
+        }
 
     citydata = raw_data.get("CITYDATA")
     if not citydata:
@@ -175,8 +266,22 @@ def fetch_live_population_batch(api_key: str, spot_df: pd.DataFrame) -> pd.DataF
 
     for _, row in unique_places.iterrows():
         spot_name = row["spot_name"]
-        api_place_name = str(row["api_place_name"]).strip()
+        api_place_name = row["api_place_name"]
 
+        if pd.isna(api_place_name) or not str(api_place_name).strip() or str(api_place_name) == "None":
+            results.append({
+                "spot_name": spot_name,
+                "api_place_name": api_place_name,
+                "congestion": "정보없음",
+                "congestion_message": "실시간 인구 API 미지원 명소",
+                "male_rate": None,
+                "female_rate": None,
+                "ppltn_min": None,
+                "ppltn_max": None,
+            })
+            continue
+
+        api_place_name = str(api_place_name).strip()
         raw_data = call_seoul_population_api(api_key, api_place_name)
         parsed = parse_population_response(raw_data)
 
@@ -193,6 +298,7 @@ def fetch_live_population_batch(api_key: str, spot_df: pd.DataFrame) -> pd.DataF
             })
         else:
             parsed["spot_name"] = spot_name
+            parsed["api_place_name"] = api_place_name
             parsed["congestion"] = parsed["congestion"] or "정보없음"
             parsed["congestion_message"] = parsed["congestion_message"] or "실시간 정보 없음"
             results.append(parsed)
@@ -216,8 +322,8 @@ def merge_spot_and_live_data(spot_df: pd.DataFrame, live_df: pd.DataFrame) -> pd
 
 
 @st.cache_data(ttl=300)
-def load_all_data(csv_url: str, api_key: str | None) -> pd.DataFrame:
-    spot_df = load_spot_csv(csv_url)
+def load_all_data(csv_path: str, api_key: str | None) -> pd.DataFrame:
+    spot_df = load_spot_csv(csv_path)
 
     if api_key:
         live_df = fetch_live_population_batch(api_key, spot_df)
@@ -225,7 +331,7 @@ def load_all_data(csv_url: str, api_key: str | None) -> pd.DataFrame:
     else:
         df = spot_df.copy()
         df["congestion"] = "정보없음"
-        df["congestion_message"] = "실시간 정보 없음"
+        df["congestion_message"] = "SEOUL_API_KEY 미설정"
         df["male_rate"] = None
         df["female_rate"] = None
         df["ppltn_min"] = None
@@ -235,7 +341,7 @@ def load_all_data(csv_url: str, api_key: str | None) -> pd.DataFrame:
 
 
 # -----------------------------
-# 시각화 / UI 함수
+# 지도 / 카드
 # -----------------------------
 def make_map(df: pd.DataFrame, selected_spot: str | None = None):
     fmap = folium.Map(location=SEOUL_CENTER, zoom_start=11)
@@ -247,10 +353,11 @@ def make_map(df: pd.DataFrame, selected_spot: str | None = None):
 
         popup_html = f"""
         <b>{row['spot_name']}</b><br>
-        카테고리: {row.get('category', '-')}<br>
+        분류: {row.get('category', '-')}<br>
         혼잡도: {congestion}<br>
         운영시간: {row.get('operation_hours', '-')}<br>
-        주소: {row.get('address', '-')}
+        주소: {row.get('address', '-')}<br>
+        API 매핑: {row.get('api_place_name', '-')}
         """
 
         folium.CircleMarker(
@@ -259,7 +366,7 @@ def make_map(df: pd.DataFrame, selected_spot: str | None = None):
             color=color,
             fill=True,
             fill_opacity=0.8,
-            popup=folium.Popup(popup_html, max_width=300),
+            popup=folium.Popup(popup_html, max_width=350),
             tooltip=f"{row['spot_name']} ({congestion})"
         ).add_to(fmap)
 
@@ -268,16 +375,20 @@ def make_map(df: pd.DataFrame, selected_spot: str | None = None):
 
 def render_spot_card(row: pd.Series):
     badge = CONGESTION_ICON.get(row["congestion"], "⚪")
+
     with st.container(border=True):
         st.markdown(f"### {row['spot_name']}")
         st.markdown(
             f"{badge} **혼잡도:** {row.get('congestion', '정보없음')}  \n"
-            f"**카테고리:** {row.get('category', '-')}  \n"
+            f"**분류:** {row.get('category', '-')}  \n"
             f"**운영시간:** {row.get('operation_hours', '-')}  \n"
-            f"**이용요금:** {row.get('fee', '-')}"
+            f"**유/무료:** {row.get('free_type', '-')}"
         )
-        st.write(row.get("description", ""))
-        st.caption(f"📍 {row.get('district', '-')} | 🚇 {row.get('transport', '-')}")
+        st.write(row.get("description", "")[:250] + ("..." if len(row.get("description", "")) > 250 else ""))
+        st.caption(
+            f"📍 {row.get('district', '-')} | 🚇 {row.get('transport', '-')} | "
+            f"🔗 API 매핑: {row.get('api_place_name', '-') if pd.notna(row.get('api_place_name')) else '미지원'}"
+        )
 
 
 def get_recommended_spots(df: pd.DataFrame, top_n: int = 3) -> pd.DataFrame:
@@ -305,7 +416,7 @@ def get_alternative_spots(df: pd.DataFrame, selected_row: pd.Series, top_n: int 
 api_key = st.secrets.get("SEOUL_API_KEY", None)
 
 try:
-    df = load_all_data(CSV_URL, api_key)
+    df = load_all_data(CSV_PATH, api_key)
 except Exception as e:
     st.error(f"데이터 로드 실패: {e}")
     st.stop()
@@ -321,7 +432,7 @@ page = st.sidebar.radio(
 # -----------------------------
 if page == "홈":
     st.title("오늘 밤, 서울 어디로 갈까?")
-    st.subheader("실시간 인구 데이터와 야간 명소 정보를 결합한 서울 야간 외출 추천 서비스")
+    st.subheader("실시간 인구 데이터와 서울시 야경명소 정보를 결합한 야간 외출 추천 서비스")
 
     col1, col2 = st.columns([2, 1])
 
@@ -368,7 +479,7 @@ elif page == "탐색":
         congestion_options = ["전체", "여유", "보통", "붐빔", "정보없음"]
         district_options = ["전체"] + sorted([x for x in df["district"].dropna().unique().tolist() if x != ""])
 
-        selected_category = st.selectbox("카테고리", category_options)
+        selected_category = st.selectbox("분류", category_options)
         selected_congestion = st.selectbox("혼잡도", congestion_options)
         selected_district = st.selectbox("지역구", district_options)
 
@@ -410,7 +521,12 @@ elif page == "탐색":
                 st_folium(make_map(filtered_df), height=560, width=None)
 
         with tab3:
-            st.dataframe(filtered_df, use_container_width=True)
+            show_cols = [
+                "spot_name", "category", "district", "address", "operation_hours",
+                "free_type", "fee", "api_place_name", "congestion", "congestion_message"
+            ]
+            existing_cols = [c for c in show_cols if c in filtered_df.columns]
+            st.dataframe(filtered_df[existing_cols], use_container_width=True)
 
 # -----------------------------
 # 명소 상세
@@ -427,7 +543,7 @@ elif page == "명소 상세":
     st.markdown(
         f"{badge} **혼잡도:** {selected_row.get('congestion', '정보없음')}  \n"
         f"**혼잡 안내:** {selected_row.get('congestion_message', '실시간 정보 없음')}  \n"
-        f"**카테고리:** {selected_row.get('category', '-')}  \n"
+        f"**분류:** {selected_row.get('category', '-')}  \n"
         f"**운영시간:** {selected_row.get('operation_hours', '-')}"
     )
 
@@ -439,9 +555,13 @@ elif page == "명소 상세":
 
         st.markdown("## 이용 정보")
         st.write(f"**주소:** {selected_row.get('address', '-')}")
+        st.write(f"**유/무료:** {selected_row.get('free_type', '-')}")
         st.write(f"**이용요금:** {selected_row.get('fee', '-')}")
         st.write(f"**교통:** {selected_row.get('transport', '-')}")
         st.write(f"**주차:** {selected_row.get('parking', '-')}")
+        st.write(f"**전화번호:** {selected_row.get('phone', '-')}")
+        st.write(f"**홈페이지:** {selected_row.get('homepage_url', '-')}")
+        st.write(f"**API 매핑 장소:** {selected_row.get('api_place_name', '-') if pd.notna(selected_row.get('api_place_name')) else '미지원'}")
 
     with c2:
         st.markdown("## 실시간 정보")
@@ -481,7 +601,7 @@ elif page == "서비스 소개":
         이 서비스는 서울시 공공데이터를 활용하여 다음 정보를 결합합니다.
 
         - **실시간 인구 데이터(API)**
-        - **야간 명소 데이터(CSV)**
+        - **서울시 야경명소 정보(CSV)**
 
         이를 통해 사용자가 서울의 야간 명소를 선택할 때  
         현재 혼잡도와 장소 정보를 함께 확인할 수 있도록 설계했습니다.
@@ -489,11 +609,18 @@ elif page == "서비스 소개":
     )
 
     with st.expander("현재 불러온 CSV 확인"):
-        st.write("CSV URL:", CSV_URL)
+        st.write("CSV 경로:", CSV_PATH)
         st.write("컬럼명:", df.columns.tolist())
         st.dataframe(df.head(), use_container_width=True)
 
+    with st.expander("API 매핑 현황"):
+        mapping_view = df[["spot_name", "api_place_name"]].copy()
+        mapping_view["api_place_name"] = mapping_view["api_place_name"].fillna("미지원")
+        st.dataframe(mapping_view, use_container_width=True)
+
     with st.expander("실시간 API 테스트"):
+        st.write("api_key loaded:", api_key is not None)
+
         test_place = st.text_input("API 장소명 입력", value="")
         if st.button("응답 확인"):
             if not api_key:
