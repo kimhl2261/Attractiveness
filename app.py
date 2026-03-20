@@ -95,7 +95,8 @@ h1 { font-size: 2rem !important; }
 .stSelectbox label, .stTextInput label { color: #c8a0d8 !important; }
 
 /* 토글 */
-.stToggle label { color: #c8a0d8 !important; }
+.stToggle label { color: #ffffff !important; font-weight: 500; }
+.stCheckbox label { color: #ffffff !important; font-weight: 500; }
 
 /* 캡션 */
 .stCaption { color: #a080b8 !important; }
@@ -237,7 +238,7 @@ SPOT_TO_API: dict[str, str | None] = {
     "난지거울분수":                         "난지한강공원",
 
     # 공원·문화
-    "청계천":                               "청계산",   # 청계천은 공식 목록에 없음→종로청계 관광특구
+    "청계천":                               "종로·청계 관광특구",
     "국립중앙박물관·용산가족공원":            "국립중앙박물관·용산가족공원",
     "서울함 공원":                          None,
     "서울식물원":                           "서울식물원·마곡나루",
@@ -364,17 +365,7 @@ def parse_live(raw: dict) -> dict:
         "ppltn_max":          item.get("AREA_PPLTN_MAX"),
     }
 
-@st.cache_data(ttl=300)
-def fetch_population(api_key: str, place_names: list[str]) -> dict[str, dict]:
-    """place_names 리스트(캐시 가능한 list) → {place_name: parsed_dict}"""
-    result = {}
-    for name in place_names:
-        raw = call_api(api_key, name)
-        result[name] = parse_live(raw)
-        time.sleep(0.15)
-    return result
-
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=300, show_spinner="실시간 혼잡도 불러오는 중...")
 def load_all_data(csv_url: str, api_key: str | None) -> pd.DataFrame:
     df = load_spot_csv(csv_url)
     for c in ["congestion","congestion_message","male_rate","female_rate","ppltn_min","ppltn_max"]:
@@ -383,13 +374,16 @@ def load_all_data(csv_url: str, api_key: str | None) -> pd.DataFrame:
     if not api_key:
         return df
 
-    # 매핑된 고유 API 장소명만 추출
     unique_places = sorted({
         str(p) for p in df["api_place_name"].dropna().unique()
         if str(p).strip() and str(p) != "None"
     })
 
-    place_data = fetch_population(api_key, unique_places)
+    # ★ 중첩 @st.cache_data 금지 — 캐시 없는 함수로 직접 루프 실행
+    place_data = {}
+    for name in unique_places:
+        place_data[name] = parse_live(call_api(api_key, name))
+        time.sleep(0.15)
 
     for place_name, parsed in place_data.items():
         if not parsed or parsed.get("congestion") is None:
@@ -571,7 +565,7 @@ with st.sidebar:
             '⚠️ API 키 없음 — 혼잡도 미표시<br><span style="color:#a080b8;font-size:11px;">'
             'secrets에 SEOUL_API_KEY 추가 필요</span></div>', unsafe_allow_html=True)
 
-    page = st.radio("", ["🏠 홈", "🔍 탐색", "📍 명소 상세", "ℹ️ 소개 & 디버그"], label_visibility="collapsed")
+    page = st.radio("", ["🏠 홈", "🔍 탐색", "📍 명소 상세", "ℹ️ 서비스 소개"], label_visibility="collapsed")
 
     st.markdown('<hr style="border-color:rgba(200,100,180,0.2);margin:12px 0;">', unsafe_allow_html=True)
 
@@ -750,10 +744,10 @@ elif page == "📍 명소 상세":
 
 
 # ════════════════════════════════════════════════════════════════
-# 소개 & 디버그
+# 서비스 소개
 # ════════════════════════════════════════════════════════════════
-elif page == "ℹ️ 소개 & 디버그":
-    st.markdown("# 서비스 소개 & 디버그")
+elif page == "ℹ️ 서비스 소개":
+    st.markdown("# 서비스 소개")
 
     st.markdown("""
     <div style="color:#e8d0c0;line-height:1.9;font-size:15px;">
