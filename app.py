@@ -22,10 +22,10 @@ SEOUL_CENTER = [37.5665, 126.9780]
 CSV_URL = "https://raw.githubusercontent.com/kimhl2261/Attractiveness/main/seoul_night.csv"
 
 CONGESTION_COLOR = {
-    "여유": "green",
-    "보통": "orange",
-    "붐빔": "red",
-    "정보없음": "blue"
+    "여유": "#22c55e",
+    "보통": "#f97316",
+    "붐빔": "#ef4444",
+    "정보없음": "#3b82f6"
 }
 
 CONGESTION_ICON = {
@@ -98,6 +98,27 @@ API_PLACE_MAPPING = {
     "서울어린이대공원 음악분수": None,
     "성산대교": "서울월드컵경기장",
 }
+
+# -----------------------------
+# 주차 가능 여부 파싱
+# -----------------------------
+def parse_parking(parking_value: str) -> str:
+    """주차 정보 문자열에서 가능/불가/정보없음 반환"""
+    if not parking_value or parking_value.strip() in ("", "-", "nan"):
+        return "정보없음"
+    v = parking_value.strip()
+    no_keywords = ["불가", "없음", "주차 불가", "주차없음", "주차 없음", "불가능"]
+    yes_keywords = ["가능", "있음", "주차 가능", "주차가능", "주차장", "무료", "유료"]
+    for kw in no_keywords:
+        if kw in v:
+            return "불가"
+    for kw in yes_keywords:
+        if kw in v:
+            return "가능"
+    if len(v) > 1:
+        return "가능"
+    return "정보없음"
+
 
 # -----------------------------
 # 텍스트 정리
@@ -212,6 +233,9 @@ def load_spot_csv(csv_url: str) -> pd.DataFrame:
     for col in clean_cols:
         if col in df.columns:
             df[col] = df[col].apply(clean_text)
+
+    # 주차 가능 여부 컬럼 추가
+    df["parking_available"] = df["parking"].apply(parse_parking)
 
     return df
 
@@ -369,54 +393,183 @@ def load_all_data(csv_url: str, api_key: str | None) -> pd.DataFrame:
 
 
 # -----------------------------
-# 지도 / 카드
+# [수정1] 커스텀 지도 마커 생성
+# -----------------------------
+def make_custom_icon(congestion: str, parking: str) -> folium.DivIcon:
+    """혼잡도 색상 + 주차 여부를 담은 커스텀 핀 아이콘 생성"""
+    color = CONGESTION_COLOR.get(congestion, "#3b82f6")
+
+    # 주차 배지 (P)
+    parking_badge = ""
+    if parking == "가능":
+        parking_badge = (
+            '<div style="position:absolute;top:-4px;right:-4px;'
+            'width:14px;height:14px;background:#1d4ed8;border-radius:50%;'
+            'border:1.5px solid #fff;font-size:8px;font-weight:700;'
+            'color:#fff;display:flex;align-items:center;justify-content:center;'
+            'line-height:1;">P</div>'
+        )
+    elif parking == "불가":
+        parking_badge = (
+            '<div style="position:absolute;top:-4px;right:-4px;'
+            'width:14px;height:14px;background:#dc2626;border-radius:50%;'
+            'border:1.5px solid #fff;font-size:8px;font-weight:700;'
+            'color:#fff;display:flex;align-items:center;justify-content:center;'
+            'line-height:1;">✕</div>'
+        )
+
+    html_icon = f"""
+    <div style="position:relative;width:28px;height:36px;">
+      <!-- 핀 몸통 -->
+      <div style="
+        position:absolute;top:0;left:0;
+        width:28px;height:28px;
+        background:{color};
+        border-radius:50% 50% 50% 0;
+        transform:rotate(-45deg);
+        border:2.5px solid #fff;
+        box-shadow:0 2px 6px rgba(0,0,0,0.35);
+      "></div>
+      <!-- 핀 내부 흰 원 -->
+      <div style="
+        position:absolute;top:6px;left:6px;
+        width:12px;height:12px;
+        background:#fff;
+        border-radius:50%;
+        transform:rotate(0deg);
+        opacity:0.85;
+      "></div>
+      {parking_badge}
+    </div>
+    """
+    return folium.DivIcon(
+        html=html_icon,
+        icon_size=(28, 36),
+        icon_anchor=(14, 36),
+    )
+
+
+# -----------------------------
+# [수정2] 지도 생성 — 커스텀 마커 적용
 # -----------------------------
 def make_map(df: pd.DataFrame, selected_spot: str | None = None):
-    fmap = folium.Map(location=SEOUL_CENTER, zoom_start=11)
+    fmap = folium.Map(
+        location=SEOUL_CENTER,
+        zoom_start=11,
+        tiles="CartoDB positron",   # 더 깔끔한 배경 타일
+    )
 
     for _, row in df.iterrows():
         congestion = row.get("congestion", "정보없음")
-        color = CONGESTION_COLOR.get(congestion, "blue")
-        radius = 12 if row["spot_name"] == selected_spot else 8
+        parking = row.get("parking_available", "정보없음")
 
         api_name = row.get("api_place_name", "-")
         if pd.isna(api_name) or str(api_name).strip() == "":
             api_name = "미지원"
 
+        parking_icon = {"가능": "🅿️", "불가": "🚫", "정보없음": "❓"}.get(parking, "❓")
+
         popup_html = f"""
-        <b>{row['spot_name']}</b><br>
-        분류: {row.get('category', '-')}<br>
-        혼잡도: {congestion}<br>
-        운영시간: {row.get('operation_hours', '-')}<br>
-        주소: {row.get('address', '-')}<br>
-        API 매핑: {api_name}
+        <div style="font-family:sans-serif;min-width:200px;">
+          <b style="font-size:14px;">{row['spot_name']}</b><br>
+          <span style="color:{CONGESTION_COLOR.get(congestion,'#3b82f6')}">● {congestion}</span><br>
+          분류: {row.get('category', '-')}<br>
+          운영시간: {row.get('operation_hours', '-')}<br>
+          주차: {parking_icon} {parking}<br>
+          주소: {row.get('address', '-')}
+        </div>
         """
 
-        folium.CircleMarker(
+        # 선택된 스팟은 크기를 키워서 강조
+        if row["spot_name"] == selected_spot:
+            icon_size = (36, 46)
+        else:
+            icon_size = (28, 36)
+
+        custom_icon = make_custom_icon(congestion, parking)
+        custom_icon.options["iconSize"] = list(icon_size)
+        custom_icon.options["iconAnchor"] = [icon_size[0] // 2, icon_size[1]]
+
+        folium.Marker(
             location=[row["lat"], row["lon"]],
-            radius=radius,
-            color=color,
-            fill=True,
-            fill_opacity=0.8,
-            popup=folium.Popup(popup_html, max_width=350),
-            tooltip=f"{row['spot_name']} ({congestion})"
+            icon=custom_icon,
+            popup=folium.Popup(popup_html, max_width=280),
+            tooltip=f"{row['spot_name']} | {congestion} | 주차 {parking}",
         ).add_to(fmap)
+
+    # 범례 추가
+    legend_html = """
+    <div style="
+        position:fixed;bottom:24px;left:24px;z-index:9999;
+        background:rgba(255,255,255,0.95);
+        border-radius:10px;padding:12px 16px;
+        box-shadow:0 2px 10px rgba(0,0,0,0.15);
+        font-family:sans-serif;font-size:12px;line-height:1.9;
+    ">
+      <b style="font-size:13px;">혼잡도</b><br>
+      <span style="color:#22c55e">●</span> 여유&nbsp;&nbsp;
+      <span style="color:#f97316">●</span> 보통&nbsp;&nbsp;
+      <span style="color:#ef4444">●</span> 붐빔&nbsp;&nbsp;
+      <span style="color:#3b82f6">●</span> 정보없음<br>
+      <b style="font-size:13px;">주차</b><br>
+      <span style="background:#1d4ed8;color:#fff;border-radius:50%;padding:0 4px;font-size:10px;font-weight:700;">P</span> 가능&nbsp;&nbsp;
+      <span style="background:#dc2626;color:#fff;border-radius:50%;padding:0 3px;font-size:10px;font-weight:700;">✕</span> 불가
+    </div>
+    """
+    fmap.get_root().html.add_child(folium.Element(legend_html))
 
     return fmap
 
 
+# -----------------------------
+# [수정3] 카드 렌더링 — 밑줄 제거 + 주차 배지 추가
+# -----------------------------
 def render_spot_card(row: pd.Series):
     badge = CONGESTION_ICON.get(row["congestion"], "⚪")
+    parking = row.get("parking_available", "정보없음")
+    parking_label = {"가능": "🅿️ 주차 가능", "불가": "🚫 주차 불가", "정보없음": "❓ 주차 정보없음"}.get(parking, "❓")
+    parking_color = {"가능": "#1d4ed8", "불가": "#dc2626", "정보없음": "#6b7280"}.get(parking, "#6b7280")
 
     with st.container(border=True):
-        st.markdown(f"### {row['spot_name']}")
-        st.write(f"{badge} 혼잡도: {row.get('congestion', '정보없음')}")
-        st.write(f"분류: {row.get('category', '-')}")
-        st.write(f"운영시간: {row.get('operation_hours', '-')}")
-        st.write(f"유/무료: {row.get('free_type', '-')}")
+        # 제목 + 주차 배지를 한 줄에 표시
+        col_title, col_park = st.columns([3, 1])
+        with col_title:
+            st.markdown(f"### {row['spot_name']}")
+        with col_park:
+            st.markdown(
+                f'<div style="margin-top:18px;text-align:right;'
+                f'color:{parking_color};font-size:13px;font-weight:600;">'
+                f'{parking_label}</div>',
+                unsafe_allow_html=True,
+            )
+
+        # 혼잡도 + 분류
+        st.markdown(
+            f'<p style="margin:0 0 4px 0;">{badge} <b>혼잡도:</b> {row.get("congestion", "정보없음")}&nbsp;&nbsp;'
+            f'<b>분류:</b> {row.get("category", "-")}</p>',
+            unsafe_allow_html=True,
+        )
+
+        # [수정1] 운영시간 — st.write 대신 markdown으로 밑줄 방지
+        op_hours = row.get("operation_hours", "-") or "-"
+        st.markdown(
+            f'<p style="margin:0 0 4px 0;"><b>운영시간:</b> {op_hours}</p>',
+            unsafe_allow_html=True,
+        )
+
+        # 유/무료
+        st.markdown(
+            f'<p style="margin:0 0 6px 0;"><b>유/무료:</b> {row.get("free_type", "-")}</p>',
+            unsafe_allow_html=True,
+        )
 
         desc = row.get("description", "")
-        st.write(desc[:250] + ("..." if len(desc) > 250 else ""))
+        if desc:
+            st.markdown(
+                f'<p style="margin:0 0 6px 0;color:#555;font-size:14px;">'
+                f'{desc[:250] + ("..." if len(desc) > 250 else "")}</p>',
+                unsafe_allow_html=True,
+            )
 
         api_place = row.get("api_place_name", "-")
         if pd.isna(api_place) or str(api_place).strip() == "":
@@ -470,7 +623,7 @@ if page == "홈":
     st.title("오늘 밤, 서울 어디로 갈까?")
     st.subheader("실시간 인구 데이터와 서울시 야경명소 정보를 결합한 야간 외출 추천 서비스")
 
-    col1, col2 = st.columns([2, 1])
+    col1, col2, col3 = st.columns([2, 1, 1])
 
     with col1:
         st.markdown(
@@ -483,6 +636,12 @@ if page == "홈":
     with col2:
         st.metric("전체 명소 수", len(df))
         st.metric("여유 명소 수", int((df["congestion"] == "여유").sum()))
+
+    with col3:
+        parking_yes = int((df["parking_available"] == "가능").sum())
+        parking_no  = int((df["parking_available"] == "불가").sum())
+        st.metric("주차 가능 명소", parking_yes)
+        st.metric("주차 불가 명소", parking_no)
 
     st.markdown("---")
     st.markdown("## 지금 추천하는 명소")
@@ -515,9 +674,13 @@ elif page == "탐색":
         congestion_options = ["전체", "여유", "보통", "붐빔", "정보없음"]
         district_options = ["전체"] + sorted([x for x in df["district"].dropna().unique().tolist() if x != ""])
 
-        selected_category = st.selectbox("분류", category_options)
+        selected_category   = st.selectbox("분류", category_options)
         selected_congestion = st.selectbox("혼잡도", congestion_options)
-        selected_district = st.selectbox("지역구", district_options)
+        selected_district   = st.selectbox("지역구", district_options)
+
+        # [신규] 주차 필터
+        parking_options = ["전체", "가능", "불가", "정보없음"]
+        selected_parking = st.selectbox("🅿️ 주차 여부", parking_options)
 
     filtered_df = df.copy()
 
@@ -534,6 +697,10 @@ elif page == "탐색":
 
     if selected_district != "전체":
         filtered_df = filtered_df[filtered_df["district"] == selected_district]
+
+    # [신규] 주차 필터 적용
+    if selected_parking != "전체":
+        filtered_df = filtered_df[filtered_df["parking_available"] == selected_parking]
 
     temp = filtered_df.copy()
     temp["priority"] = temp["congestion"].map(CONGESTION_PRIORITY).fillna(99)
@@ -559,7 +726,8 @@ elif page == "탐색":
         with tab3:
             show_cols = [
                 "spot_name", "category", "district", "address", "operation_hours",
-                "free_type", "fee", "api_place_name", "congestion", "congestion_message"
+                "free_type", "fee", "parking_available",
+                "api_place_name", "congestion", "congestion_message"
             ]
             existing_cols = [c for c in show_cols if c in filtered_df.columns]
             st.dataframe(filtered_df[existing_cols], use_container_width=True)
@@ -574,12 +742,38 @@ elif page == "명소 상세":
     selected_row = df[df["spot_name"] == selected_spot_name].iloc[0]
 
     badge = CONGESTION_ICON.get(selected_row["congestion"], "⚪")
+    parking = selected_row.get("parking_available", "정보없음")
+    parking_label = {"가능": "🅿️ 주차 가능", "불가": "🚫 주차 불가", "정보없음": "❓ 주차 정보없음"}.get(parking, "❓")
+    parking_color = {"가능": "#1d4ed8", "불가": "#dc2626", "정보없음": "#6b7280"}.get(parking, "#6b7280")
 
-    st.markdown(f"# {selected_row['spot_name']}")
-    st.write(f"{badge} 혼잡도: {selected_row.get('congestion', '정보없음')}")
-    st.write(f"혼잡 안내: {selected_row.get('congestion_message', '실시간 정보 없음')}")
-    st.write(f"분류: {selected_row.get('category', '-')}")
-    st.write(f"운영시간: {selected_row.get('operation_hours', '-')}")
+    title_col, park_col = st.columns([4, 1])
+    with title_col:
+        st.markdown(f"# {selected_row['spot_name']}")
+    with park_col:
+        st.markdown(
+            f'<div style="margin-top:24px;text-align:right;'
+            f'color:{parking_color};font-size:15px;font-weight:700;">'
+            f'{parking_label}</div>',
+            unsafe_allow_html=True,
+        )
+
+    st.markdown(
+        f'<p>{badge} 혼잡도: <b>{selected_row.get("congestion", "정보없음")}</b></p>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f'<p>혼잡 안내: {selected_row.get("congestion_message", "실시간 정보 없음")}</p>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f'<p>분류: {selected_row.get("category", "-")}</p>',
+        unsafe_allow_html=True,
+    )
+    # [수정1] 운영시간 밑줄 제거
+    st.markdown(
+        f'<p>운영시간: {selected_row.get("operation_hours", "-") or "-"}</p>',
+        unsafe_allow_html=True,
+    )
 
     c1, c2 = st.columns([2, 1])
 
@@ -588,32 +782,47 @@ elif page == "명소 상세":
         st.write(selected_row.get("description", ""))
 
         st.markdown("## 이용 정보")
-        st.write(f"주소: {selected_row.get('address', '-')}")
-        st.write(f"유/무료: {selected_row.get('free_type', '-')}")
-        st.write(f"이용요금: {selected_row.get('fee', '-')}")
-        st.write(f"교통: {selected_row.get('transport', '-')}")
-        st.write(f"주차: {selected_row.get('parking', '-')}")
-        st.write(f"전화번호: {selected_row.get('phone', '-')}")
-        st.write(f"홈페이지: {selected_row.get('homepage_url', '-')}")
+        for label, key in [
+            ("주소", "address"), ("유/무료", "free_type"), ("이용요금", "fee"),
+            ("교통", "transport"), ("주차", "parking"), ("전화번호", "phone"),
+            ("홈페이지", "homepage_url"),
+        ]:
+            val = selected_row.get(key, "-") or "-"
+            st.markdown(
+                f'<p style="margin:2px 0;"><b>{label}:</b> {val}</p>',
+                unsafe_allow_html=True,
+            )
 
         api_name = selected_row.get("api_place_name", "-")
         if pd.isna(api_name) or str(api_name).strip() == "":
             api_name = "미지원"
-        st.write(f"API 매핑 장소: {api_name}")
+        st.markdown(
+            f'<p style="margin:2px 0;"><b>API 매핑 장소:</b> {api_name}</p>',
+            unsafe_allow_html=True,
+        )
 
     with c2:
         st.markdown("## 실시간 정보")
         st.metric("혼잡도", selected_row.get("congestion", "정보없음"))
 
-        male_rate = selected_row.get("male_rate")
+        male_rate   = selected_row.get("male_rate")
         female_rate = selected_row.get("female_rate")
-        ppltn_min = selected_row.get("ppltn_min")
-        ppltn_max = selected_row.get("ppltn_max")
+        ppltn_min   = selected_row.get("ppltn_min")
+        ppltn_max   = selected_row.get("ppltn_max")
 
-        st.metric("남성 비율", "-" if pd.isna(male_rate) else male_rate)
+        st.metric("남성 비율", "-" if pd.isna(male_rate)   else male_rate)
         st.metric("여성 비율", "-" if pd.isna(female_rate) else female_rate)
         st.metric("추정 인구 최소", "-" if pd.isna(ppltn_min) else ppltn_min)
         st.metric("추정 인구 최대", "-" if pd.isna(ppltn_max) else ppltn_max)
+
+        st.markdown("## 주차 안내")
+        st.markdown(
+            f'<div style="font-size:20px;font-weight:700;color:{parking_color};">'
+            f'{parking_label}</div>',
+            unsafe_allow_html=True,
+        )
+        raw_parking = selected_row.get("parking", "") or "-"
+        st.caption(raw_parking)
 
     st.markdown("---")
     st.markdown("## 위치")
@@ -655,6 +864,11 @@ elif page == "서비스 소개":
         mapping_view = df[["spot_name", "api_place_name"]].copy()
         mapping_view["api_place_name"] = mapping_view["api_place_name"].fillna("미지원")
         st.dataframe(mapping_view, use_container_width=True)
+
+    with st.expander("주차 현황 요약"):
+        parking_summary = df["parking_available"].value_counts().reset_index()
+        parking_summary.columns = ["주차 여부", "명소 수"]
+        st.dataframe(parking_summary, use_container_width=True)
 
     with st.expander("실시간 API 테스트"):
         st.write("api_key loaded:", api_key is not None)
