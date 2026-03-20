@@ -565,7 +565,7 @@ with st.sidebar:
             '⚠️ API 키 없음 — 혼잡도 미표시<br><span style="color:#a080b8;font-size:11px;">'
             'secrets에 SEOUL_API_KEY 추가 필요</span></div>', unsafe_allow_html=True)
 
-    page = st.radio("", ["🏠 홈", "🔍 탐색", "📍 명소 상세", "ℹ️ 서비스 소개"], label_visibility="collapsed")
+    page = st.radio("", ["🏠 홈", "🔍 탐색", "📍 명소 상세", "서비스 소개"], label_visibility="collapsed")
 
     st.markdown('<hr style="border-color:rgba(200,100,180,0.2);margin:12px 0;">', unsafe_allow_html=True)
 
@@ -746,7 +746,7 @@ elif page == "📍 명소 상세":
 # ════════════════════════════════════════════════════════════════
 # 서비스 소개
 # ════════════════════════════════════════════════════════════════
-elif page == "ℹ️ 서비스 소개":
+elif page == "서비스 소개":
     st.markdown("# 서비스 소개")
 
     st.markdown("""
