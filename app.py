@@ -18,83 +18,82 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── 노을 테마 CSS ─────────────────────────────────────────────────
+# ── 가독성 강화 CSS ──────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
 
 html, body, [data-testid="stAppViewContainer"] {
-    background: linear-gradient(160deg, #1a0a2e 0%, #2d1454 25%, #6b2d6b 55%, #c45c3a 80%, #e8874a 100%) !important;
+    background: linear-gradient(160deg, #160b25 0%, #241238 30%, #4c2452 65%, #91503a 100%) !important;
     background-attachment: fixed !important;
     font-family: 'Noto Sans KR', sans-serif;
 }
+
 [data-testid="stSidebar"] {
-    background: rgba(15, 5, 30, 0.82) !important;
-    border-right: 1px solid rgba(180, 80, 180, 0.25) !important;
-    backdrop-filter: blur(12px);
-}
-[data-testid="stSidebar"] * { color: #f0dff8 !important; }
-[data-testid="stSidebar"] .stRadio label { color: #d4b8e8 !important; }
-
-/* 메인 텍스트 */
-h1, h2, h3 { color: #ffeedd !important; text-shadow: 0 2px 12px rgba(0,0,0,0.4); }
-h1 { font-size: 2rem !important; }
-.stMarkdown p, .stMarkdown li { color: #f0d8c8; }
-
-/* 카드 컨테이너 */
-[data-testid="stVerticalBlockBorderWrapper"] {
-    background: rgba(20, 8, 40, 0.65) !important;
-    border: 1px solid rgba(200, 100, 180, 0.3) !important;
-    border-radius: 16px !important;
+    background: rgba(10, 8, 20, 0.92) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
     backdrop-filter: blur(10px);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.3) !important;
+}
+[data-testid="stSidebar"] * {
+    color: #f5ecff !important;
 }
 
-/* 메트릭 */
-[data-testid="stMetric"] {
-    background: rgba(20, 8, 40, 0.55);
-    border: 1px solid rgba(200, 100, 180, 0.25);
-    border-radius: 12px;
-    padding: 12px 16px !important;
+h1, h2, h3, h4 {
+    color: #fff4ea !important;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+}
+.stMarkdown p, .stMarkdown li, .stText, .stCaptionContainer {
+    color: #f2e6dc !important;
+}
+
+/* 카드 */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: rgba(20, 14, 35, 0.82) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.22) !important;
     backdrop-filter: blur(8px);
 }
-[data-testid="stMetricLabel"] { color: #c8a0d8 !important; font-size: 12px; }
-[data-testid="stMetricValue"] { color: #ffeedd !important; }
 
-/* 탭 */
-[data-testid="stTabs"] button { color: #c8a0d8; font-weight: 500; }
-[data-testid="stTabs"] button[aria-selected="true"] {
-    color: #ffb347 !important;
-    border-bottom: 2px solid #ffb347 !important;
+/* metric */
+[data-testid="stMetric"] {
+    background: rgba(20, 14, 35, 0.78) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
+}
+[data-testid="stMetricLabel"] {
+    color: #d3bddf !important;
+}
+[data-testid="stMetricValue"] {
+    color: #fff4ea !important;
+}
+
+/* 입력 */
+.stTextInput input, .stSelectbox div[data-baseweb="select"] > div {
+    background: rgba(18, 14, 30, 0.85) !important;
+    color: #fff4ea !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 10px !important;
+}
+.stTextInput label, .stSelectbox label {
+    color: #f8f2ff !important;
+    font-weight: 600 !important;
 }
 
 /* 버튼 */
 .stButton > button {
-    background: rgba(150, 60, 150, 0.35);
-    border: 1px solid rgba(200, 100, 180, 0.5);
-    color: #ffeedd;
-    border-radius: 10px;
-    backdrop-filter: blur(6px);
-    transition: all 0.2s;
+    background: rgba(128, 72, 170, 0.35) !important;
+    color: #fff7f0 !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+    border-radius: 10px !important;
 }
 .stButton > button:hover {
-    background: rgba(200, 80, 120, 0.5);
-    border-color: #ffb347;
-    color: #ffb347;
+    border-color: #ffca7a !important;
+    color: #ffca7a !important;
 }
 
-/* 입력 필드 */
-.stSelectbox > div > div,
-.stTextInput > div > div {
-    background: rgba(20, 8, 40, 0.6) !important;
-    border-color: rgba(200, 100, 180, 0.35) !important;
-    color: #ffeedd !important;
-    border-radius: 10px !important;
-    backdrop-filter: blur(6px);
-}
-.stSelectbox label, .stTextInput label { color: #c8a0d8 !important; }
-
-/* 토글/체크박스 라벨 흰색 고정 */
+/* 토글/체크박스 */
 [data-testid="stWidgetLabel"] * {
     color: #ffffff !important;
 }
@@ -104,42 +103,54 @@ h1 { font-size: 2rem !important; }
 .stCheckbox p,
 label[data-testid="stWidgetLabel"] {
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
 }
 
-/* 캡션 */
-.stCaption { color: #a080b8 !important; }
-
-/* 구분선 */
-hr { border-color: rgba(200, 100, 180, 0.2) !important; }
-
-/* 알림 박스 */
-[data-testid="stInfo"]    { background: rgba(10,40,80,0.55)  !important; border-color: rgba(80,140,255,0.5)  !important; color: #c8deff !important; }
-[data-testid="stSuccess"] { background: rgba(10,60,30,0.55)  !important; border-color: rgba(80,200,120,0.5)  !important; color: #c8ffe0 !important; }
-[data-testid="stWarning"] { background: rgba(60,35,0,0.55)   !important; border-color: rgba(255,160,50,0.5)  !important; color: #ffe4b0 !important; }
-[data-testid="stError"]   { background: rgba(60,10,10,0.55)  !important; border-color: rgba(255,80,80,0.5)   !important; color: #ffc8c8 !important; }
+/* 탭 */
+[data-testid="stTabs"] button {
+    color: #ddc7ea !important;
+    font-weight: 600 !important;
+}
+[data-testid="stTabs"] button[aria-selected="true"] {
+    color: #ffd27f !important;
+    border-bottom: 2px solid #ffd27f !important;
+}
 
 /* expander */
 [data-testid="stExpander"] {
-    background: rgba(20, 8, 40, 0.5) !important;
-    border: 1px solid rgba(200, 100, 180, 0.25) !important;
+    background: rgba(20, 14, 35, 0.72) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
     border-radius: 12px !important;
 }
-[data-testid="stExpander"] summary { color: #d4b8e8 !important; }
+[data-testid="stExpander"] summary {
+    color: #f3e7ff !important;
+}
 
-/* 배지 */
+/* 정보 박스 */
+[data-testid="stInfo"] {
+    background: rgba(8, 38, 82, 0.6) !important;
+    color: #d8ecff !important;
+}
+[data-testid="stSuccess"] {
+    background: rgba(7, 58, 27, 0.6) !important;
+    color: #dcffe6 !important;
+}
+[data-testid="stWarning"] {
+    background: rgba(77, 49, 0, 0.6) !important;
+    color: #ffe9bd !important;
+}
+[data-testid="stError"] {
+    background: rgba(75, 16, 16, 0.6) !important;
+    color: #ffd2d2 !important;
+}
+
 .badge {
     display: inline-block;
     padding: 3px 10px;
-    border-radius: 20px;
+    border-radius: 999px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
 }
-
-/* 스크롤바 */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: rgba(20,8,40,0.3); }
-::-webkit-scrollbar-thumb { background: rgba(180,80,180,0.4); border-radius: 3px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -148,19 +159,20 @@ SEOUL_CENTER = [37.5665, 126.9780]
 CSV_URL = "https://raw.githubusercontent.com/kimhl2261/Attractiveness/main/seoul_night.csv"
 
 CONGESTION_COLOR = {"여유": "#4ade80", "보통": "#fbbf24", "붐빔": "#f87171"}
-CONGESTION_BG    = {"여유": "rgba(10,60,30,0.6)", "보통": "rgba(60,40,0,0.6)", "붐빔": "rgba(60,10,10,0.6)"}
-CONGESTION_ICON  = {"여유": "🟢", "보통": "🟡", "붐빔": "🔴"}
+CONGESTION_BG = {"여유": "rgba(9, 58, 30, 0.55)", "보통": "rgba(76, 53, 8, 0.55)", "붐빔": "rgba(84, 18, 18, 0.55)"}
+CONGESTION_ICON = {"여유": "🟢", "보통": "🟡", "붐빔": "🔴"}
 CONGESTION_PRIORITY = {"여유": 0, "보통": 1, "붐빔": 2, "정보없음": 3}
 
 PARKING_COLOR = {"가능": "#60a5fa", "불가": "#f87171"}
-PARKING_ICON  = {"가능": "🅿️", "불가": "⛔"}
+PARKING_ICON = {"가능": "🅿️", "불가": "⛔"}
 
-# ── CSV 명소명 → 서울시 API 장소명 매핑 ─────────────────────────
+# ── 명소명 → API 장소명 매핑 ─────────────────────────────────────
 SPOT_TO_API: dict[str, str | None] = {
     "남산서울타워": "명동 관광특구",
     "숭례문(남대문)": "명동 관광특구",
     "서울로미디어캔버스": "명동 관광특구",
     "남산공원 백범광장- 서울한양도성 성곽": "남산공원",
+
     "동대문디자인플라자(DDP)": "DDP(동대문디자인플라자)",
     "장충체육관": "DDP(동대문디자인플라자)",
     "낙산공원 - 한양도성 성곽길": "낙산공원·이화마을",
@@ -221,7 +233,8 @@ def clean_text(v):
     if pd.isna(v):
         return ""
     t = html.unescape(str(v))
-    t = re.sub(r"<[^>]+>", "", t).replace("~~", "")
+    t = re.sub(r"<[^>]+>", "", t)
+    t = t.replace("~~", "")
     return re.sub(r"\s+", " ", t).strip()
 
 def parse_parking(v: str) -> str | None:
@@ -236,7 +249,7 @@ def parse_parking(v: str) -> str | None:
             return "가능"
     return "가능" if len(v) > 1 else None
 
-# ── CSV 로드 ──────────────────────────────────────────────────────
+# ── CSV 로드 ─────────────────────────────────────────────────────
 @st.cache_data(ttl=600)
 def load_spot_csv(url: str) -> pd.DataFrame:
     for enc in ["utf-8-sig", "cp949", "euc-kr"]:
@@ -249,10 +262,18 @@ def load_spot_csv(url: str) -> pd.DataFrame:
         raise ValueError("CSV 읽기 실패")
 
     df = df.rename(columns={
-        "분류": "category", "장소명": "spot_name", "주소": "address",
-        "위도": "lat", "경도": "lon", "운영시간": "operation_hours",
-        "유무료구분": "free_type", "이용요금": "fee", "내용": "description",
-        "주차안내": "parking", "전화번호": "phone", "홈페이지 URL": "homepage_url",
+        "분류": "category",
+        "장소명": "spot_name",
+        "주소": "address",
+        "위도": "lat",
+        "경도": "lon",
+        "운영시간": "operation_hours",
+        "유무료구분": "free_type",
+        "이용요금": "fee",
+        "내용": "description",
+        "주차안내": "parking",
+        "전화번호": "phone",
+        "홈페이지 URL": "homepage_url",
     })
 
     sub = df["지하철"].fillna("").astype(str).str.strip() if "지하철" in df.columns else pd.Series([""] * len(df))
@@ -262,7 +283,11 @@ def load_spot_csv(url: str) -> pd.DataFrame:
         for s, b in zip(sub, bus)
     ]
 
-    df["district"] = df["address"].astype(str).str.extract(r"([가-힣]+구)")[0].fillna("") if "address" in df.columns else ""
+    if "address" in df.columns:
+        df["district"] = df["address"].astype(str).str.extract(r"([가-힣]+구)")[0].fillna("")
+    else:
+        df["district"] = ""
+
     df["lat"] = pd.to_numeric(df["lat"], errors="coerce")
     df["lon"] = pd.to_numeric(df["lon"], errors="coerce")
     df = df.dropna(subset=["lat", "lon"]).copy()
@@ -280,7 +305,7 @@ def load_spot_csv(url: str) -> pd.DataFrame:
     df["parking_available"] = df["parking"].apply(parse_parking)
     return df
 
-# ── API 호출 ──────────────────────────────────────────────────────
+# ── API 호출 ─────────────────────────────────────────────────────
 def _encode(name: str) -> str:
     try:
         return quote(name.encode("euc-kr"))
@@ -307,7 +332,6 @@ def parse_live(raw: dict) -> dict:
     if not raw or raw.get("error"):
         return empty
 
-    # RESULT가 있을 때만 실패 판정
     result = raw.get("RESULT")
     if result is not None:
         code = result.get("CODE")
@@ -343,14 +367,29 @@ def load_all_data(csv_url: str, api_key: str | None) -> pd.DataFrame:
         if str(p).strip() and str(p) != "None"
     })
 
+    debug_rows = []
     place_data = {}
+
     for name in unique_places:
         raw = call_api(api_key, name)
-        place_data[name] = parse_live(raw)
+        parsed = parse_live(raw)
+        place_data[name] = parsed
+
+        code = (raw.get("RESULT") or {}).get("CODE", "")
+        has_city = raw.get("CITYDATA") is not None
+        debug_rows.append({
+            "api_place_name": name,
+            "result_code": code if code else "(없음)",
+            "has_citydata": has_city,
+            "parsed_congestion": parsed.get("congestion"),
+        })
+
         time.sleep(0.15)
 
+    st.session_state["api_debug_df"] = pd.DataFrame(debug_rows)
+
     for place_name, parsed in place_data.items():
-        if not parsed:
+        if parsed is None:
             continue
         mask = df["api_place_name"] == place_name
         for col, val in parsed.items():
@@ -365,8 +404,9 @@ _HDR = {
 }
 
 def _valid(url: str) -> bool:
-    return bool(url and url.startswith("http") and
-                not any(p in url.lower() for p in ["icon", "logo", "favicon", "pixel", "1x1", "sprite"]))
+    return bool(url and url.startswith("http") and not any(
+        p in url.lower() for p in ["icon", "logo", "favicon", "pixel", "1x1", "sprite"]
+    ))
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_image(homepage_url: str, spot_name: str) -> str | None:
@@ -374,6 +414,7 @@ def fetch_image(homepage_url: str, spot_name: str) -> str | None:
         try:
             r = requests.get(homepage_url, headers=_HDR, timeout=7, allow_redirects=True)
             soup = BeautifulSoup(r.text, "html.parser")
+
             for tag, attr in [("meta", {"property": "og:image"}), ("meta", {"name": "twitter:image"})]:
                 el = soup.find(tag, attr)
                 if el:
@@ -382,6 +423,7 @@ def fetch_image(homepage_url: str, spot_name: str) -> str | None:
                         src = urljoin(homepage_url, src)
                     if _valid(src):
                         return src
+
             for img in soup.find_all("img", src=True):
                 src = img["src"]
                 if not src.startswith("http"):
@@ -411,7 +453,7 @@ def fetch_image(homepage_url: str, spot_name: str) -> str | None:
         pass
     return None
 
-# ── 지도 ──────────────────────────────────────────────────────────
+# ── 지도 ─────────────────────────────────────────────────────────
 def _pin(congestion, parking) -> folium.DivIcon:
     color = CONGESTION_COLOR.get(congestion, "#c084fc")
     badge = ""
@@ -424,11 +466,14 @@ def _pin(congestion, parking) -> folium.DivIcon:
           <div style="position:absolute;width:30px;height:30px;background:{color};border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid rgba(255,255,255,0.8);box-shadow:0 3px 10px rgba(0,0,0,0.5);"></div>
           <div style="position:absolute;top:7px;left:7px;width:12px;height:12px;background:rgba(255,255,255,0.9);border-radius:50%;"></div>
           {badge}</div>''',
-        icon_size=(30, 38), icon_anchor=(15, 38))
+        icon_size=(30, 38),
+        icon_anchor=(15, 38)
+    )
 
 def make_map(df: pd.DataFrame, selected: str | None = None):
     fmap = folium.Map(
-        location=SEOUL_CENTER, zoom_start=11,
+        location=SEOUL_CENTER,
+        zoom_start=11,
         tiles="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
         attr="CARTO Dark",
     )
@@ -437,6 +482,7 @@ def make_map(df: pd.DataFrame, selected: str | None = None):
         parking = row.get("parking_available")
         p_label = (PARKING_ICON.get(parking, "") + " " + (parking or "")) if parking else "정보없음"
         c_color = CONGESTION_COLOR.get(cong, "#c084fc")
+
         popup_html = (
             f'<div style="font-family:sans-serif;background:rgba(20,8,40,0.95);color:#ffeedd;'
             f'padding:10px 14px;border-radius:10px;min-width:190px;border:1px solid rgba(200,100,180,0.4);">'
@@ -444,10 +490,12 @@ def make_map(df: pd.DataFrame, selected: str | None = None):
             f'<span style="color:{c_color}">● {cong}</span><br>'
             f'{row.get("operation_hours","-")}<br>주차: {p_label}</div>'
         )
+
         icon = _pin(cong, parking)
         if row["spot_name"] == selected:
             icon.options["iconSize"] = [38, 48]
             icon.options["iconAnchor"] = [19, 48]
+
         folium.Marker(
             [row["lat"], row["lon"]],
             icon=icon,
@@ -455,26 +503,12 @@ def make_map(df: pd.DataFrame, selected: str | None = None):
             tooltip=f'<span style="background:rgba(20,8,40,0.9);color:#ffeedd;padding:4px 8px;border-radius:6px;font-size:12px;">{row["spot_name"]} | {cong}</span>',
         ).add_to(fmap)
 
-    fmap.get_root().html.add_child(folium.Element("""
-    <div style="position:fixed;bottom:20px;left:20px;z-index:9999;
-        background:rgba(20,8,40,0.88);border:1px solid rgba(200,100,180,0.3);border-radius:12px;
-        padding:10px 14px;font-family:sans-serif;font-size:12px;color:#ffeedd;line-height:2;
-        backdrop-filter:blur(8px);">
-      <b style="color:#c8a0d8;">혼잡도</b><br>
-      <span style="color:#4ade80">●</span> 여유 &nbsp;
-      <span style="color:#fbbf24">●</span> 보통 &nbsp;
-      <span style="color:#f87171">●</span> 붐빔 &nbsp;
-      <span style="color:#c084fc">●</span> 정보없음<br>
-      <b style="color:#c8a0d8;">주차</b><br>
-      <span style="background:#60a5fa;color:#0a0a1a;border-radius:50%;font-size:9px;font-weight:800;padding:1px 4px;">P</span> 가능 &nbsp;
-      <span style="background:#f87171;color:#0a0a1a;border-radius:50%;font-size:9px;font-weight:800;padding:1px 3px;">✕</span> 불가
-    </div>"""))
     return fmap
 
 # ── 카드 컴포넌트 ─────────────────────────────────────────────────
 def c_badge(val):
     if not val or val == "정보없음":
-        return '<span class="badge" style="background:rgba(80,40,100,0.5);color:#c8a0d8;border:1px solid rgba(180,80,180,0.3);">정보없음</span>'
+        return '<span class="badge" style="background:rgba(80,40,100,0.45);color:#ead9f7;border:1px solid rgba(255,255,255,0.10);">정보없음</span>'
     c = CONGESTION_COLOR[val]
     b = CONGESTION_BG[val]
     return f'<span class="badge" style="background:{b};color:{c};border:1px solid {c}40;">{CONGESTION_ICON[val]} {val}</span>'
@@ -488,31 +522,42 @@ def p_badge(val):
 def render_card(row: pd.Series, show_image: bool = False, compact: bool = False):
     cong = row.get("congestion")
     parking = row.get("parking_available")
+
     with st.container(border=True):
         if show_image:
             img = fetch_image(row.get("homepage_url", ""), row.get("spot_name", ""))
             if img:
                 st.image(img, use_container_width=True)
+
         st.markdown(
             f'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">'
-            f'<span style="font-size:15px;font-weight:700;color:#ffeedd;">{row["spot_name"]}</span>'
+            f'<span style="font-size:16px;font-weight:700;color:#fff4ea;">{row["spot_name"]}</span>'
             f'<div style="display:flex;gap:6px;flex-shrink:0;">{c_badge(cong)}{p_badge(parking)}</div>'
-            f'</div>', unsafe_allow_html=True)
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
         if not compact:
             op = row.get("operation_hours", "") or ""
             cat = row.get("category", "") or ""
             st.markdown(
-                f'<div style="color:#c8a0d8;font-size:13px;margin-bottom:4px;">'
-                f'{"🕐 " + op if op else ""}{"  ·  " if op and cat else ""}{"📍 " + cat if cat else ""}</div>',
-                unsafe_allow_html=True)
+                f'<div style="color:#ead4f4;font-size:13px;margin-bottom:6px;line-height:1.5;">'
+                f'{"🕐 " + op if op else ""}'
+                f'{"  ·  " if op and cat else ""}'
+                f'{"📍 " + cat if cat else ""}</div>',
+                unsafe_allow_html=True
+            )
+
             desc = row.get("description", "") or ""
             if desc:
                 st.markdown(
-                    f'<div style="color:#e8d0c0;font-size:13px;line-height:1.55;margin-top:4px;">'
+                    f'<div style="color:#f3e6dc;font-size:13px;line-height:1.65;margin-top:4px;">'
                     f'{desc[:180] + ("..." if len(desc) > 180 else "")}</div>',
-                    unsafe_allow_html=True)
-                dist = row.get("district", "")
-        trs = row.get("transport", "")
+                    unsafe_allow_html=True
+                )
+
+        dist = row.get("district", "") or ""
+        trs = row.get("transport", "") or ""
 
         info_lines = []
         if dist:
@@ -522,10 +567,10 @@ def render_card(row: pd.Series, show_image: bool = False, compact: bool = False)
 
         if info_lines:
             st.markdown(
-                "<div style='color:#9070a8;font-size:12px;margin-top:6px;line-height:1.6;'>"
+                "<div style='color:#c9b0db;font-size:12px;margin-top:8px;line-height:1.7;'>"
                 + "<br>".join(info_lines) +
                 "</div>",
-                unsafe_allow_html=True,
+                unsafe_allow_html=True
             )
 
 # ── 데이터 로드 ───────────────────────────────────────────────────
@@ -539,55 +584,58 @@ except Exception as e:
 # ── 사이드바 ──────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 🌇 서울 야간 명소")
-    st.markdown('<hr style="border-color:rgba(200,100,180,0.3);margin:8px 0 16px;">', unsafe_allow_html=True)
+    st.markdown('<hr style="border-color:rgba(255,255,255,0.10);margin:8px 0 16px;">', unsafe_allow_html=True)
 
     if api_key:
         live_cnt = int(df["congestion"].notna().sum())
         st.markdown(
             f'<div style="background:rgba(10,50,20,0.55);border:1px solid rgba(80,200,100,0.4);'
             f'border-radius:10px;padding:9px 13px;font-size:13px;color:#a0f0b0;margin-bottom:12px;">'
-            f'✅ API 연결됨 · 혼잡도 {live_cnt}곳 수신</div>', unsafe_allow_html=True)
+            f'✅ API 연결됨 · 혼잡도 {live_cnt}곳 수신</div>',
+            unsafe_allow_html=True
+        )
     else:
         st.markdown(
             '<div style="background:rgba(60,35,0,0.55);border:1px solid rgba(255,160,50,0.4);'
             'border-radius:10px;padding:9px 13px;font-size:12px;color:#ffd580;margin-bottom:12px;">'
-            '⚠️ API 키 없음 — 혼잡도 미표시<br><span style="color:#a080b8;font-size:11px;">'
-            'secrets에 SEOUL_API_KEY 추가 필요</span></div>', unsafe_allow_html=True)
+            '⚠️ API 키 없음 — 혼잡도 미표시<br><span style="color:#ccb3dd;font-size:11px;">'
+            'secrets에 SEOUL_API_KEY 추가 필요</span></div>',
+            unsafe_allow_html=True
+        )
 
     page = st.radio("", ["🏠 홈", "🔍 탐색", "📍 명소 상세", "서비스 소개"], label_visibility="collapsed")
 
-    st.markdown('<hr style="border-color:rgba(200,100,180,0.2);margin:12px 0;">', unsafe_allow_html=True)
+    st.markdown('<hr style="border-color:rgba(255,255,255,0.08);margin:12px 0;">', unsafe_allow_html=True)
 
     total = len(df)
     easy_cnt = int((df["congestion"] == "여유").sum())
     park_cnt = int((df["parking_available"] == "가능").sum())
     cat_cnt = df["category"].nunique()
+
     st.markdown(f"""
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <div style="background:rgba(20,8,40,0.55);border:1px solid rgba(180,80,180,0.25);border-radius:10px;padding:10px;text-align:center;">
-        <div style="font-size:22px;font-weight:700;color:#ffeedd;">{total}</div>
-        <div style="font-size:11px;color:#c8a0d8;">전체 명소</div>
+      <div style="background:rgba(20,14,35,0.78);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#fff4ea;">{total}</div>
+        <div style="font-size:11px;color:#d7c2e3;">전체 명소</div>
       </div>
-      <div style="background:rgba(10,50,20,0.5);border:1px solid rgba(80,200,100,0.3);border-radius:10px;padding:10px;text-align:center;">
+      <div style="background:rgba(10,50,20,0.5);border:1px solid rgba(80,200,100,0.25);border-radius:10px;padding:10px;text-align:center;">
         <div style="font-size:22px;font-weight:700;color:#4ade80;">{easy_cnt}</div>
-        <div style="font-size:11px;color:#c8a0d8;">여유 명소</div>
+        <div style="font-size:11px;color:#d7c2e3;">여유 명소</div>
       </div>
-      <div style="background:rgba(10,30,60,0.5);border:1px solid rgba(100,160,255,0.3);border-radius:10px;padding:10px;text-align:center;">
+      <div style="background:rgba(10,30,60,0.5);border:1px solid rgba(100,160,255,0.25);border-radius:10px;padding:10px;text-align:center;">
         <div style="font-size:22px;font-weight:700;color:#60a5fa;">{park_cnt}</div>
-        <div style="font-size:11px;color:#c8a0d8;">주차 가능</div>
+        <div style="font-size:11px;color:#d7c2e3;">주차 가능</div>
       </div>
-      <div style="background:rgba(20,8,40,0.55);border:1px solid rgba(180,80,180,0.25);border-radius:10px;padding:10px;text-align:center;">
-        <div style="font-size:22px;font-weight:700;color:#f0c8ff;">{cat_cnt}</div>
-        <div style="font-size:11px;color:#c8a0d8;">분류 수</div>
+      <div style="background:rgba(20,14,35,0.78);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#f3d5ff;">{cat_cnt}</div>
+        <div style="font-size:11px;color:#d7c2e3;">분류 수</div>
       </div>
     </div>""", unsafe_allow_html=True)
 
-# ════════════════════════════════════════════════════════════════
-# 홈
-# ════════════════════════════════════════════════════════════════
+# ── 홈 ───────────────────────────────────────────────────────────
 if page == "🏠 홈":
     st.markdown("# 오늘 밤, 서울 어디로?")
-    st.markdown('<div style="color:#d4a8b8;margin:-12px 0 20px;font-size:15px;">실시간 혼잡도로 찾는 서울 야간 명소</div>', unsafe_allow_html=True)
+    st.markdown('<div style="color:#f1d9c8;margin:-12px 0 20px;font-size:15px;">실시간 혼잡도로 찾는 서울 야간 명소</div>', unsafe_allow_html=True)
 
     show_img = st.toggle("대표 이미지 표시", value=False, help="홈페이지에서 이미지를 불러옵니다 (속도 저하 가능)")
 
@@ -604,9 +652,7 @@ if page == "🏠 홈":
     st.markdown("### 서울 야간 명소 지도")
     st_folium(make_map(df), height=520, width=None, returned_objects=[])
 
-# ════════════════════════════════════════════════════════════════
-# 탐색
-# ════════════════════════════════════════════════════════════════
+# ── 탐색 ─────────────────────────────────────────────────────────
 elif page == "🔍 탐색":
     st.markdown("# 명소 탐색")
 
@@ -638,7 +684,7 @@ elif page == "🔍 탐색":
     fdf["_p"] = fdf["congestion"].map(CONGESTION_PRIORITY).fillna(99)
     fdf = fdf.sort_values(["_p", "spot_name"])
 
-    st.markdown(f'<div style="color:#c8a0d8;font-size:13px;margin-bottom:12px;">총 <b style="color:#ffeedd;">{len(fdf)}개</b> 명소</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color:#ead4f4;font-size:13px;margin-bottom:12px;">총 <b style="color:#fff4ea;">{len(fdf)}개</b> 명소</div>', unsafe_allow_html=True)
 
     tab_card, tab_map, tab_data = st.tabs(["카드", "지도", "표"])
     with tab_card:
@@ -663,9 +709,7 @@ elif page == "🔍 탐색":
         cols = ["spot_name", "category", "district", "operation_hours", "free_type", "parking_available", "api_place_name", "congestion", "congestion_message"]
         st.dataframe(fdf[[c for c in cols if c in fdf.columns]], use_container_width=True, hide_index=True)
 
-# ════════════════════════════════════════════════════════════════
-# 명소 상세
-# ════════════════════════════════════════════════════════════════
+# ── 명소 상세 ─────────────────────────────────────────────────────
 elif page == "📍 명소 상세":
     st.markdown("# 명소 상세")
     sel = st.selectbox("명소 선택", sorted(df["spot_name"].astype(str).tolist()), label_visibility="collapsed")
@@ -676,8 +720,10 @@ elif page == "📍 명소 상세":
 
     st.markdown(
         f'<div style="display:flex;align-items:center;gap:12px;margin:8px 0 16px;">'
-        f'<h2 style="margin:0;color:#ffeedd;">{sel}</h2>'
-        f'{c_badge(cong)}{p_badge(parking)}</div>', unsafe_allow_html=True)
+        f'<h2 style="margin:0;color:#fff4ea;">{sel}</h2>'
+        f'{c_badge(cong)}{p_badge(parking)}</div>',
+        unsafe_allow_html=True
+    )
 
     left, right = st.columns([3, 2])
     with left:
@@ -691,30 +737,32 @@ elif page == "📍 명소 상세":
             cc = CONGESTION_COLOR.get(cong, "#c084fc")
             cb = CONGESTION_BG.get(cong, "rgba(40,10,60,0.6)")
             st.markdown(
-                f'<div style="background:{cb};border:1px solid {cc}40;border-radius:10px;'
-                f'padding:10px 14px;color:{cc};font-size:13px;margin-bottom:12px;">💬 {msg}</div>',
-                unsafe_allow_html=True)
+                f'<div style="background:{cb};border:1px solid {cc}40;border-radius:10px;padding:10px 14px;color:{cc};font-size:13px;margin-bottom:12px;">💬 {msg}</div>',
+                unsafe_allow_html=True
+            )
 
-        st.markdown('<b style="color:#ffeedd;">장소 설명</b>', unsafe_allow_html=True)
-        st.markdown(f'<div style="color:#e8d0c0;font-size:14px;line-height:1.7;">{row.get("description","") or "설명 없음"}</div>', unsafe_allow_html=True)
-        st.markdown('<hr style="border-color:rgba(200,100,180,0.2);margin:14px 0;">', unsafe_allow_html=True)
-        st.markdown('<b style="color:#ffeedd;">이용 정보</b>', unsafe_allow_html=True)
+        st.markdown('<b style="color:#fff4ea;">장소 설명</b>', unsafe_allow_html=True)
+        st.markdown(f'<div style="color:#f2e6dc;font-size:14px;line-height:1.75;">{row.get("description","") or "설명 없음"}</div>', unsafe_allow_html=True)
+
+        st.markdown('<hr style="border-color:rgba(255,255,255,0.08);margin:14px 0;">', unsafe_allow_html=True)
+        st.markdown('<b style="color:#fff4ea;">이용 정보</b>', unsafe_allow_html=True)
         for label, key in [("📍 주소", "address"), ("🕐 운영시간", "operation_hours"),
                            ("💰 요금", "fee"), ("🚇 교통", "transport"),
                            ("🅿️ 주차", "parking"), ("📞 전화", "phone"), ("🔗 홈페이지", "homepage_url")]:
             val = row.get(key, "") or ""
             if val.strip() and val.strip() != "-":
                 st.markdown(
-                    f'<div style="display:flex;gap:10px;padding:4px 0;border-bottom:1px solid rgba(150,60,150,0.2);">'
-                    f'<span style="color:#c8a0d8;font-size:13px;min-width:80px;">{label}</span>'
-                    f'<span style="color:#e8d0c0;font-size:13px;">{val}</span></div>',
-                    unsafe_allow_html=True)
+                    f'<div style="display:flex;gap:10px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'
+                    f'<span style="color:#dbc5e7;font-size:13px;min-width:80px;">{label}</span>'
+                    f'<span style="color:#f2e6dc;font-size:13px;">{val}</span></div>',
+                    unsafe_allow_html=True
+                )
 
     with right:
-        st.markdown('<b style="color:#ffeedd;">실시간 인구 현황</b>', unsafe_allow_html=True)
+        st.markdown('<b style="color:#fff4ea;">실시간 인구 현황</b>', unsafe_allow_html=True)
         api_name = row.get("api_place_name", "")
         if api_name:
-            st.markdown(f'<div style="color:#9070a8;font-size:12px;margin-bottom:8px;">API 매핑: {api_name}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="color:#cdb7dc;font-size:12px;margin-bottom:8px;">API 매핑: {api_name}</div>', unsafe_allow_html=True)
 
         if cong:
             c1r, c2r = st.columns(2)
@@ -736,15 +784,16 @@ elif page == "📍 명소 상세":
                 "API 키 미설정"
             )
             st.markdown(
-                f'<div style="color:#c8a0d8;font-size:13px;background:rgba(40,10,60,0.5);'
-                f'border-radius:10px;padding:12px;">{msg_text}</div>', unsafe_allow_html=True)
+                f'<div style="color:#dbc5e7;font-size:13px;background:rgba(40,10,60,0.5);border-radius:10px;padding:12px;">{msg_text}</div>',
+                unsafe_allow_html=True
+            )
 
-        st.markdown('<hr style="border-color:rgba(200,100,180,0.2);margin:14px 0;">', unsafe_allow_html=True)
-        st.markdown('<b style="color:#ffeedd;">위치</b>', unsafe_allow_html=True)
+        st.markdown('<hr style="border-color:rgba(255,255,255,0.08);margin:14px 0;">', unsafe_allow_html=True)
+        st.markdown('<b style="color:#fff4ea;">위치</b>', unsafe_allow_html=True)
         st_folium(make_map(df[df["spot_name"] == sel], selected=sel), height=250, width=None, returned_objects=[])
 
-    st.markdown('<hr style="border-color:rgba(200,100,180,0.2);margin:20px 0 14px;">', unsafe_allow_html=True)
-    st.markdown('<b style="color:#ffeedd;">같은 분류 다른 명소</b>', unsafe_allow_html=True)
+    st.markdown('<hr style="border-color:rgba(255,255,255,0.08);margin:20px 0 14px;">', unsafe_allow_html=True)
+    st.markdown('<b style="color:#fff4ea;">같은 분류 다른 명소</b>', unsafe_allow_html=True)
     alt = df[(df["spot_name"] != sel) & (df["category"] == row["category"])].copy()
     alt["_p"] = alt["congestion"].map(CONGESTION_PRIORITY).fillna(99)
     alt = alt.sort_values(["_p", "spot_name"]).head(3)
@@ -755,21 +804,19 @@ elif page == "📍 명소 상세":
             with c:
                 render_card(ar, compact=True)
 
-# ════════════════════════════════════════════════════════════════
-# 서비스 소개
-# ════════════════════════════════════════════════════════════════
+# ── 서비스 소개 ───────────────────────────────────────────────────
 elif page == "서비스 소개":
     st.markdown("# 서비스 소개")
 
     st.markdown("""
-    <div style="color:#e8d0c0;line-height:1.9;font-size:15px;">
-    서울시 공공데이터를 활용해 야간 명소의 <b style="color:#ffeedd;">실시간 혼잡도</b>와
-    <b style="color:#ffeedd;">장소 정보</b>를 한눈에 확인하는 서비스입니다.<br><br>
-    <b style="color:#ffb347;">장소명 매핑 방식:</b> CSV의 명소명과 서울시 API의 공식 장소명은 서로 다릅니다.
+    <div style="color:#f2e6dc;line-height:1.9;font-size:15px;">
+    서울시 공공데이터를 활용해 야간 명소의 <b style="color:#fff4ea;">실시간 혼잡도</b>와
+    <b style="color:#fff4ea;">장소 정보</b>를 한눈에 확인하는 서비스입니다.<br><br>
+    <b style="color:#ffd27f;">장소명 매핑 방식:</b> CSV의 명소명과 서울시 API의 공식 장소명은 서로 다릅니다.
     <code>SPOT_TO_API</code> 딕셔너리로 양쪽을 연결하며, 매핑 안 된 명소는 혼잡도가 표시되지 않습니다.
     </div>""", unsafe_allow_html=True)
 
-    st.markdown('<hr style="border-color:rgba(200,100,180,0.2);margin:16px 0;">', unsafe_allow_html=True)
+    st.markdown('<hr style="border-color:rgba(255,255,255,0.08);margin:16px 0;">', unsafe_allow_html=True)
 
     with st.expander("🗺️ CSV 명소 ↔ API 장소명 매핑 현황"):
         mv = df[["spot_name", "api_place_name", "congestion"]].copy()
@@ -778,8 +825,15 @@ elif page == "서비스 소개":
         mv = mv.rename(columns={"spot_name": "CSV 명소명", "api_place_name": "API 장소명"})
         st.dataframe(mv[["CSV 명소명", "API 장소명", "매핑", "혼잡도 수신"]], use_container_width=True, hide_index=True)
 
+    with st.expander("🛠 API 호출 디버그"):
+        debug_df = st.session_state.get("api_debug_df")
+        if debug_df is not None and len(debug_df) > 0:
+            st.dataframe(debug_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("디버그 정보가 없습니다.")
+
     with st.expander("🔬 API 직접 테스트"):
-        st.markdown('<div style="color:#c8a0d8;font-size:13px;margin-bottom:8px;">장소명을 직접 입력해 API 응답을 확인합니다.</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#dbc5e7;font-size:13px;margin-bottom:8px;">장소명을 직접 입력해 API 응답을 확인합니다.</div>', unsafe_allow_html=True)
 
         mapped_places = sorted({
             str(p) for p in df["api_place_name"].dropna().unique()
@@ -799,31 +853,15 @@ elif page == "서비스 소개":
             elif not test_place:
                 st.warning("장소명을 선택하거나 입력해 주세요.")
             else:
-                euckr_url = f".../{_encode(test_place)}"
-                st.markdown(
-                    f'<div style="background:rgba(20,8,40,0.7);border-radius:8px;padding:10px;'
-                    f'font-size:12px;color:#c8a0d8;margin-bottom:8px;font-family:monospace;">'
-                    f'EUC-KR: {euckr_url}<br>UTF-8: .../{quote(test_place)}</div>',
-                    unsafe_allow_html=True)
-
                 with st.spinner(f"'{test_place}' 호출 중..."):
                     raw = call_api(api_key, test_place)
-
-                code = (raw.get("RESULT") or {}).get("CODE", "")
-                if code == "INFO-000" or raw.get("CITYDATA"):
                     parsed = parse_live(raw)
-                    st.success(f"✅ 성공! 혼잡도 → **{parsed.get('congestion', 'N/A')}**")
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("혼잡도", parsed.get("congestion") or "-")
-                    c2.metric("추정 인구", f"{parsed.get('ppltn_min','-')}~{parsed.get('ppltn_max','-')}명")
-                    c3.metric("성비", f"남 {parsed.get('male_rate','-')}% / 여 {parsed.get('female_rate','-')}%")
-                elif code == "ERROR-500":
-                    st.error("❌ ERROR-500 — 장소명이 API 공식 목록과 정확히 일치하지 않습니다.")
-                else:
-                    st.error(f"❌ {code} — {(raw.get('RESULT') or {}).get('MESSAGE', '')}")
 
-                with st.expander("원본 JSON"):
-                    st.json(raw)
+                st.write("원본 JSON")
+                st.json(raw)
+
+                st.write("파싱 결과")
+                st.json(parsed)
 
     with st.expander("📊 데이터 미리보기"):
         st.dataframe(df.head(10), use_container_width=True, hide_index=True)
