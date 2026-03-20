@@ -19,7 +19,7 @@ SEOUL_CENTER = [37.5665, 126.9780]
 # 네 GitHub CSV raw 링크로 바꿔라
 # 예:
 # https://raw.githubusercontent.com/USER/REPO/main/data/night_spots.csv
-CSV_URL = "https://raw.githubusercontent.com/kimhl2261/Attractiveness/main/서울시 야경명소 정보.csv"
+CSV_URL = "https://raw.githubusercontent.com/kimhl2261/Attractiveness/서울시 야경명소 정보.csv"
 
 CONGESTION_COLOR = {
     "여유": "green",
