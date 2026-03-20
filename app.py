@@ -17,7 +17,7 @@ st.set_page_config(
 SEOUL_CENTER = [37.5665, 126.9780]
 
 # 업로드한 CSV 파일 경로
-CSV_PATH = "/mnt/data/서울시 야경명소 정보.csv"
+CSV_PATH = "https://raw.githubusercontent.com/kimhl2261/Attractiveness/main/seoul_night.csv"
 
 CONGESTION_COLOR = {
     "여유": "green",
