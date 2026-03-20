@@ -511,13 +511,22 @@ def render_card(row: pd.Series, show_image: bool = False, compact: bool = False)
                     f'<div style="color:#e8d0c0;font-size:13px;line-height:1.55;margin-top:4px;">'
                     f'{desc[:180] + ("..." if len(desc) > 180 else "")}</div>',
                     unsafe_allow_html=True)
-        dist = row.get("district", "")
+                dist = row.get("district", "")
         trs = row.get("transport", "")
-        if dist or trs:
+
+        info_lines = []
+        if dist:
+            info_lines.append(f"📌 {dist}")
+        if trs:
+            info_lines.append(f"🚇 {trs}")
+
+        if info_lines:
             st.markdown(
-                f'<div style="color:#9070a8;font-size:12px;margin-top:6px;">'
-                f'{"📌 " + dist if dist else ""}{"　" if dist and trs else ""}{"🚇 " + trs[:40] if trs else ""}</div>',
-                unsafe_allow_html=True)
+                "<div style='color:#9070a8;font-size:12px;margin-top:6px;line-height:1.6;'>"
+                + "<br>".join(info_lines) +
+                "</div>",
+                unsafe_allow_html=True,
+            )
 
 # ── 데이터 로드 ───────────────────────────────────────────────────
 api_key = st.secrets.get("SEOUL_API_KEY", None)
