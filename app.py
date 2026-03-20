@@ -1,4 +1,6 @@
 import time
+import re
+import html
 from urllib.parse import quote
 
 import requests
@@ -17,8 +19,6 @@ st.set_page_config(
 # 기본 설정
 # -----------------------------
 SEOUL_CENTER = [37.5665, 126.9780]
-
-# GitHub RAW 주소 사용
 CSV_URL = "https://raw.githubusercontent.com/kimhl2261/Attractiveness/main/seoul_night.csv"
 
 CONGESTION_COLOR = {
@@ -100,12 +100,24 @@ API_PLACE_MAPPING = {
 }
 
 # -----------------------------
+# 텍스트 정리
+# -----------------------------
+def clean_text(value):
+    if pd.isna(value):
+        return ""
+    text = str(value)
+    text = html.unescape(text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = text.replace("~~", "")
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+# -----------------------------
 # CSV 로드
 # -----------------------------
 @st.cache_data(ttl=600)
 def load_spot_csv(csv_url: str) -> pd.DataFrame:
-    # GitHub raw CSV는 일반적으로 utf-8-sig로 잘 읽힘
-    # 실패하면 cp949/euc-kr 순서로 재시도
     encodings = ["utf-8-sig", "cp949", "euc-kr"]
     last_error = None
 
@@ -169,7 +181,6 @@ def load_spot_csv(csv_url: str) -> pd.DataFrame:
 
     df["lat"] = pd.to_numeric(df["lat"], errors="coerce")
     df["lon"] = pd.to_numeric(df["lon"], errors="coerce")
-
     df = df.dropna(subset=["lat", "lon"]).copy()
 
     required_cols = ["spot_name", "lat", "lon"]
@@ -193,6 +204,14 @@ def load_spot_csv(csv_url: str) -> pd.DataFrame:
     ]
     for col in text_cols:
         df[col] = df[col].fillna("").astype(str).str.strip()
+
+    clean_cols = [
+        "operation_hours", "fee", "description",
+        "parking", "transport", "address"
+    ]
+    for col in clean_cols:
+        if col in df.columns:
+            df[col] = df[col].apply(clean_text)
 
     return df
 
@@ -360,13 +379,17 @@ def make_map(df: pd.DataFrame, selected_spot: str | None = None):
         color = CONGESTION_COLOR.get(congestion, "blue")
         radius = 12 if row["spot_name"] == selected_spot else 8
 
+        api_name = row.get("api_place_name", "-")
+        if pd.isna(api_name) or str(api_name).strip() == "":
+            api_name = "미지원"
+
         popup_html = f"""
         <b>{row['spot_name']}</b><br>
         분류: {row.get('category', '-')}<br>
         혼잡도: {congestion}<br>
         운영시간: {row.get('operation_hours', '-')}<br>
         주소: {row.get('address', '-')}<br>
-        API 매핑: {row.get('api_place_name', '-')}
+        API 매핑: {api_name}
         """
 
         folium.CircleMarker(
@@ -387,17 +410,20 @@ def render_spot_card(row: pd.Series):
 
     with st.container(border=True):
         st.markdown(f"### {row['spot_name']}")
-        st.markdown(
-            f"{badge} **혼잡도:** {row.get('congestion', '정보없음')}  \n"
-            f"**분류:** {row.get('category', '-')}  \n"
-            f"**운영시간:** {row.get('operation_hours', '-')}  \n"
-            f"**유/무료:** {row.get('free_type', '-')}"
-        )
+        st.write(f"{badge} 혼잡도: {row.get('congestion', '정보없음')}")
+        st.write(f"분류: {row.get('category', '-')}")
+        st.write(f"운영시간: {row.get('operation_hours', '-')}")
+        st.write(f"유/무료: {row.get('free_type', '-')}")
+
         desc = row.get("description", "")
         st.write(desc[:250] + ("..." if len(desc) > 250 else ""))
+
+        api_place = row.get("api_place_name", "-")
+        if pd.isna(api_place) or str(api_place).strip() == "":
+            api_place = "미지원"
+
         st.caption(
-            f"📍 {row.get('district', '-')} | 🚇 {row.get('transport', '-')} | "
-            f"🔗 API 매핑: {row.get('api_place_name', '-') if pd.notna(row.get('api_place_name')) else '미지원'}"
+            f"📍 {row.get('district', '-')} | 🚇 {row.get('transport', '-')} | 🔗 API 매핑: {api_place}"
         )
 
 
@@ -450,7 +476,7 @@ if page == "홈":
         st.markdown(
             """
             이 서비스는 서울시 공공데이터를 활용해  
-            **현재 상대적으로 덜 붐비는 야간 명소**를 찾을 수 있도록 구성했습니다.
+            현재 상대적으로 덜 붐비는 야간 명소를 찾을 수 있도록 구성했습니다.
             """
         )
 
@@ -550,12 +576,10 @@ elif page == "명소 상세":
     badge = CONGESTION_ICON.get(selected_row["congestion"], "⚪")
 
     st.markdown(f"# {selected_row['spot_name']}")
-    st.markdown(
-        f"{badge} **혼잡도:** {selected_row.get('congestion', '정보없음')}  \n"
-        f"**혼잡 안내:** {selected_row.get('congestion_message', '실시간 정보 없음')}  \n"
-        f"**분류:** {selected_row.get('category', '-')}  \n"
-        f"**운영시간:** {selected_row.get('operation_hours', '-')}"
-    )
+    st.write(f"{badge} 혼잡도: {selected_row.get('congestion', '정보없음')}")
+    st.write(f"혼잡 안내: {selected_row.get('congestion_message', '실시간 정보 없음')}")
+    st.write(f"분류: {selected_row.get('category', '-')}")
+    st.write(f"운영시간: {selected_row.get('operation_hours', '-')}")
 
     c1, c2 = st.columns([2, 1])
 
@@ -564,14 +588,18 @@ elif page == "명소 상세":
         st.write(selected_row.get("description", ""))
 
         st.markdown("## 이용 정보")
-        st.write(f"**주소:** {selected_row.get('address', '-')}")
-        st.write(f"**유/무료:** {selected_row.get('free_type', '-')}")
-        st.write(f"**이용요금:** {selected_row.get('fee', '-')}")
-        st.write(f"**교통:** {selected_row.get('transport', '-')}")
-        st.write(f"**주차:** {selected_row.get('parking', '-')}")
-        st.write(f"**전화번호:** {selected_row.get('phone', '-')}")
-        st.write(f"**홈페이지:** {selected_row.get('homepage_url', '-')}")
-        st.write(f"**API 매핑 장소:** {selected_row.get('api_place_name', '-') if pd.notna(selected_row.get('api_place_name')) else '미지원'}")
+        st.write(f"주소: {selected_row.get('address', '-')}")
+        st.write(f"유/무료: {selected_row.get('free_type', '-')}")
+        st.write(f"이용요금: {selected_row.get('fee', '-')}")
+        st.write(f"교통: {selected_row.get('transport', '-')}")
+        st.write(f"주차: {selected_row.get('parking', '-')}")
+        st.write(f"전화번호: {selected_row.get('phone', '-')}")
+        st.write(f"홈페이지: {selected_row.get('homepage_url', '-')}")
+
+        api_name = selected_row.get("api_place_name", "-")
+        if pd.isna(api_name) or str(api_name).strip() == "":
+            api_name = "미지원"
+        st.write(f"API 매핑 장소: {api_name}")
 
     with c2:
         st.markdown("## 실시간 정보")
@@ -610,8 +638,8 @@ elif page == "서비스 소개":
         """
         이 서비스는 서울시 공공데이터를 활용하여 다음 정보를 결합합니다.
 
-        - **실시간 인구 데이터(API)**
-        - **서울시 야경명소 정보(CSV)**
+        - 실시간 인구 데이터(API)
+        - 서울시 야경명소 정보(CSV)
 
         이를 통해 사용자가 서울의 야간 명소를 선택할 때  
         현재 혼잡도와 장소 정보를 함께 확인할 수 있도록 설계했습니다.
